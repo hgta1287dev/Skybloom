@@ -86,7 +86,7 @@ const serverRoot = tree.tree.ServerScriptService;
 // Recursively walk all files
 function walk(dir, callback) {
   if (BLACKLISTED_DIRS.includes(toPosix(dir))) return;
-  console.log("dir:", dir);
+  // console.log("dir:", dir);
 
   fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
     const full = path.join(dir, entry.name);

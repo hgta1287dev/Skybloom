@@ -22,6 +22,8 @@ Timer = "sleitnick/timer@1.1.1"
 Sift = "csqrl/sift@0.0.2"
 React = "jsdotlua/react@17.2.1"
 ReactRoblox = "jsdotlua/react-roblox@17.2.1"
+OrderedSet = "hgta1287dev/ordered-set@1.2.0"
+BufferUtil = "sleitnick/buffer-util@0.3.2"
 
 [server-dependencies]
 ProfileService = "firebird702/profileservice@1.1.0"

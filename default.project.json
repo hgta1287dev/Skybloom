@@ -12,7 +12,34 @@
           "$className": "Folder"
         },
         "Services": {
-          "$className": "Folder"
+          "$className": "Folder",
+          "CameraService": {
+            "$className": "Folder",
+            "CameraServiceClient": {
+              "$path": "src/services/CameraService/Client.luau"
+            },
+            "ExternalCameraService": {
+              "$path": "src/services/CameraService/ExternalCameraService.luau"
+            }
+          },
+          "RoomService": {
+            "$className": "Folder",
+            "RoomServiceClient": {
+              "$path": "src/services/RoomService/Client.luau"
+            },
+            "SharedRoomConfig": {
+              "$path": "src/services/RoomService/SharedRoomConfig.luau"
+            }
+          },
+          "WindService": {
+            "$className": "Folder",
+            "WindServiceClient": {
+              "$path": "src/services/WindService/Client.luau"
+            },
+            "WindShake": {
+              "$path": "src/services/WindService/WindShake"
+            }
+          }
         },
         "Classes": {
           "$className": "Folder"
@@ -30,7 +57,13 @@
         "$path": "src/startup/Server.server.luau"
       },
       "Services": {
-        "$className": "Folder"
+        "$className": "Folder",
+        "RoomService": {
+          "$className": "Folder",
+          "RoomServiceServer": {
+            "$path": "src/services/RoomService/Server.luau"
+          }
+        }
       },
       "Modules": {
         "$className": "Folder"

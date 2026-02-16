@@ -1,0 +1,6 @@
+{
+  "name": "ordered-set",
+  "tree": {
+    "$path": "lib"
+  }
+}
