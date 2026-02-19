@@ -27,8 +27,11 @@
             "RoomServiceClient": {
               "$path": "src/services/RoomService/Client.luau"
             },
-            "SharedRoomConfig": {
-              "$path": "src/services/RoomService/SharedRoomConfig.luau"
+            "RoomConfig": {
+              "$path": "src/services/RoomService/RoomConfig.luau"
+            },
+            "RoomTypes": {
+              "$path": "src/services/RoomService/RoomTypes.luau"
             }
           },
           "WindService": {

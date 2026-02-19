@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage.Packages.React)
+local ListLayout = require(ReplicatedStorage.UI.core.ListLayout)
 local Theme = require(ReplicatedStorage.UI.core.Theme)
 local e = React.createElement
 
@@ -11,12 +12,14 @@ export type MemberCardProps = {
 	Host: boolean?,
 	Kick: boolean?,
 	Name: string?,
+	Ready: boolean?,
 	Size: UDim2?,
 	Thumbnail: string?,
 	LayoutOrder: number?,
 }
 
 function MemberCard(props: MemberCardProps)
+	local ready = props.Ready ~= nil and props.Ready or false
 	return e("Frame", {
 		Size = props.Size or UDim2.new(0.5, -Theme.Spacing.LG, 0, Size),
 		BackgroundTransparency = 0,
@@ -83,16 +86,16 @@ function MemberCard(props: MemberCardProps)
 			BackgroundTransparency = 1,
 			LayoutOrder = 1,
 		}, {
-			UIListLayout = e("UIListLayout", {
+			UIListLayout = e(ListLayout, {
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 0),
+				Spacing = 0,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
 				FillDirection = Enum.FillDirection.Vertical,
 				HorizontalFlex = Enum.UIFlexAlignment.Fill,
 				VerticalFlex = Enum.UIFlexAlignment.Fill,
 				Wraps = false,
-			}),
+			}::ListLayout.ListLayoutProps),
 			MemberName = e("TextLabel", {
 				Text = props.Name or (props.Host and `Host` or `Member Name`),
 				TextSize = Theme.FontSize.Title,
@@ -127,6 +130,7 @@ function MemberCard(props: MemberCardProps)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.5),
 				Size = UDim2.fromScale(1, 0.5),
+				LayoutOrder = 1,
 			}, {
 				UICorner = e("UICorner", {
 					CornerRadius = Theme.Radius.LG,

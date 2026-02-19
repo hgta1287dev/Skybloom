@@ -26,21 +26,21 @@ function LobbyMenu()
 			VerticalFlex = Enum.UIFlexAlignment.Fill,
 		}),
 		RoomList = e(RoomList, {
-			Size = UDim2.fromScale(0.35, 1),
 			Visible = true,
+			Size = UDim2.fromScale(0.35, 1),
 			LayoutOrder = 1,
 		}),
 		Divider = e(Divider, {
+			Visible = true,
 			Vertical = true,
 			Length = UDim.new(0.6, 0),
 			Thickness = 2,
 			Transparency = 0.9,
-			Visible = true,
 			LayoutOrder = 2,
 		}),
 		RoomInfo = e(RoomInfo, {
-			Size = UDim2.fromScale(0.65, 1),
 			Visible = true,
+			Size = UDim2.fromScale(0.65, 1),
 			LayoutOrder = 3,
 		}),
 	})

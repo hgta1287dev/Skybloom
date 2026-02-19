@@ -108,7 +108,7 @@ function RoomInfo(props: RoomInfoProps)
 			}
 		),
 		LeaveButton = e("TextButton", {
-			Text = "LEAVE ?",
+			Text = "LEAVE",
 			TextSize = Theme.FontSize.Body,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextYAlignment = Enum.TextYAlignment.Center,

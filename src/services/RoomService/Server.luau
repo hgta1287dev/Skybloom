@@ -1,15 +1,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local SharedRoomConfig = require(ReplicatedStorage.Shared.Services.RoomService.SharedRoomConfig)
-
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
-
-type OrderedSet<T> = OrderedSet.OrderedSet<T>
+local RoomConfig = require(ReplicatedStorage.Shared.Services.RoomService.RoomConfig)
+local RoomTypes = require(ReplicatedStorage.Shared.Services.RoomService.RoomTypes)
 
 local RoomService = Knit.CreateService({
 	Name = "RoomService",
 	Client = {
+		RoomAdded = Knit.CreateSignal(),
+		RoomRemoved = Knit.CreateSignal(),
 		RoomUpdated = Knit.CreateSignal(),
 		RoomJoined = Knit.CreateSignal(),
 		RoomLeft = Knit.CreateSignal(),
@@ -47,21 +47,11 @@ local RoomService = Knit.CreateService({
 })
 
 --*Types
-export type RoomVisibility = "Public" | "Private"
-export type RoomState = "Waiting" | "Playing"
-export type RoomConfig = {
-	MaxPlayers: number?,
-	Visibility: RoomVisibility?,
-}
-export type RoomData = {
-	Id: string,
-	Host: Player,
-	Players: OrderedSet<Player>,
-	MaxPlayers: number,
-	Visibility: RoomVisibility,
-	State: RoomState,
-	Ready: OrderedSet<Player>,
-}
+type RoomVisibility = RoomTypes.RoomVisibility
+type RoomState = RoomTypes.RoomState
+type RoomConfig = RoomTypes.RoomConfig
+type RoomData = RoomTypes.RoomData
+type SerializedRoomData = RoomTypes.SerializedRoomData
 
 --* Knit
 function RoomService:KnitInit()
@@ -88,9 +78,9 @@ function RoomService:CreateRoom(player, config: RoomConfig): (RoomData?, string?
 		Host = player,
 		Players = OrderedSet.fromArray({ player }), -- player joins the room
 		MaxPlayers = math.clamp(
-			config.MaxPlayers or SharedRoomConfig.MaxPlayers,
-			SharedRoomConfig.MinPlayers,
-			SharedRoomConfig.MaxPlayers
+			config.MaxPlayers or RoomConfig.MaxPlayers,
+			RoomConfig.MinPlayers,
+			RoomConfig.MaxPlayers
 		),
 		Visibility = config.Visibility or "Public",
 		State = "Waiting",
@@ -104,6 +94,7 @@ function RoomService:CreateRoom(player, config: RoomConfig): (RoomData?, string?
 	local snapshot = self:SerializeRoom(room)
 	self.Client.RoomJoined:Fire(player, snapshot)
 	self.Client.RoomUpdated:Fire(player, snapshot)
+	self.Client.RoomAdded:FireAll(snapshot)
 
 	return room
 end
@@ -137,6 +128,11 @@ function RoomService:JoinRoom(player, roomId: string): (boolean, string?)
 	return true
 end
 
+function RoomService:DestroyRoom(roomId: string)
+	self.rooms[roomId] = nil
+	self.Client.RoomRemoved:FireAll(roomId)
+end
+
 function RoomService:LeaveRoom(player)
 	local roomId = self.playerRoom[player]
 	if not roomId then
@@ -158,8 +154,8 @@ function RoomService:LeaveRoom(player)
 
 	-- clean up room
 	if room.Players:Size() == 0 then
-		self.rooms[roomId] = nil
 		self.Client.RoomLeft:Fire(player) -- no fire snapshot here because the room is already gone
+		self:DestroyRoom(roomId)
 		return -- no notify because the room is already gone
 	end
 
@@ -203,7 +199,8 @@ function RoomService:Kick(host, target, reason)
 	end
 
 	self:LeaveRoom(target)
-	self.Client.RoomKicked:Fire(target, reason)
+	local snapshot = self:SerializeRoom(room)
+	self.Client.RoomKicked:Fire(target, reason, snapshot)
 end
 
 -- Room Actions
@@ -214,7 +211,7 @@ function RoomService:StartGame(player): (boolean, string?)
 		return false, "Room not found"
 	end
 
-	if room.Players:Size() < SharedRoomConfig.MinPlayers then
+	if room.Players:Size() < RoomConfig.MinPlayers then
 		return false, "Not enough players"
 	end
 
@@ -234,10 +231,10 @@ function RoomService:StartGame(player): (boolean, string?)
 end
 
 -- Room Utils
-function RoomService:GenerateRoomId()
+function RoomService:GenerateRoomId(): string
 	local id
 	repeat
-		id = tostring(math.random(100000, 999999))
+		id = tostring(math.random(10000000, 99999999))
 	until not self.rooms[id]
 	return id
 end
@@ -260,7 +257,7 @@ function RoomService:GetPublicRooms()
 	return list
 end
 
-function RoomService:SerializeRoom(room: RoomData)
+function RoomService:SerializeRoom(room: RoomData): SerializedRoomData
 	local playerIds = room.Players:Map(function(p)
 		return p.UserId
 	end)
@@ -268,7 +265,7 @@ function RoomService:SerializeRoom(room: RoomData)
 		return p.UserId
 	end)
 
-	return {
+	local snapshot: SerializedRoomData = {
 		Id = room.Id,
 		HostId = room.Host and room.Host.UserId or nil,
 		PlayerIds = playerIds,
@@ -277,7 +274,9 @@ function RoomService:SerializeRoom(room: RoomData)
 		MaxPlayers = room.MaxPlayers,
 		Visibility = room.Visibility,
 		State = room.State,
-	}
+	} :: SerializedRoomData
+
+	return snapshot
 end
 
 return RoomService

@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage.Packages.React)
+local Button = require(ReplicatedStorage.UI.core.Button)
 local Theme = require(ReplicatedStorage.UI.core.Theme)
 local e = React.createElement
 
@@ -139,7 +140,7 @@ function RoomCard(props: RoomCardProps)
 			LayoutOrder = 2,
 			BackgroundTransparency = 1,
 		}, {
-			JoinButton = e("TextButton", {
+			JoinButton = e(Button, {
 				Text = "JOIN",
 				TextSize = Theme.FontSize.Body,
 				TextXAlignment = Enum.TextXAlignment.Center,

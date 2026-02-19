@@ -3,13 +3,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local MountUI = require(script.Parent.MountUI)
 
--- React Mount
-MountUI()
+local function init()
+	MountUI()
+end
 
 -- Knit Setup
 Knit.AddControllersDeep(ReplicatedStorage.Shared)
-Knit.Start()
+Knit:Start()
 	:andThen(function()
-		warn("Knit Started!")
+		warn("[CLIENT]: Knit Started!")
+		init()
 	end)
 	:catch(error)
