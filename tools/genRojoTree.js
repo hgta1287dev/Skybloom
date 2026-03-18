@@ -53,6 +53,7 @@ const tree = {
     $className: "DataModel",
 
     ReplicatedStorage: {
+      SharedStartup: { $path: "src/startup/SharedStartup", },
       Shared: {
         $className: "Folder",
       },
@@ -62,9 +63,8 @@ const tree = {
 
     ServerScriptService: {
       Server: { $path: "src/startup/Server.server.luau", },
+      ServerStartup: { $path: "src/startup/ServerStartup", },
       ServerPackages: { $path: "ServerPackages", },
-      ServerBootstrap: { $path: "src/startup/ServerBootstrap" },
-
       Services: { $className: "Folder", },
     },
 
@@ -75,8 +75,7 @@ const tree = {
     StarterPlayer: {
       StarterPlayerScripts: {
         Client: { $path: "src/startup/Client.client.luau", },
-        ClientBootstrap: { $path: "src/startup/ClientBootstrap" },
-        SharedBootstrap: { $path: "src/startup/SharedBootstrap" },
+        ClientStartup: { $path: "src/startup/ClientStartup", },
       },
     },
   }

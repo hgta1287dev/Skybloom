@@ -4,15 +4,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
-local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
 local MapContainer = require(ReplicatedStorage.Shared.Services.MapService.MapContainer)
 local MapFactory = require(ReplicatedStorage.Shared.Services.MapService.MapFactory)
 local MapModulesManager = require(ReplicatedStorage.Shared.Services.MapService.MapModulesManager)
 local GameTypes = require(ReplicatedStorage.Shared.Types.GameTypes)
-local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
-local Logger = LoggerManager:CreateLogger("MapService")
-local MapService = Knit.CreateService({
+local MapService = HoenKnit.CreateService({
 	Name = "MapService",
 
 	Client = {
@@ -40,6 +38,7 @@ local MapService = Knit.CreateService({
 
 	_currentTransitionId = 0,
 })
+local Logger = MapService._logger
 
 -- * Types
 export type Mode = GameTypes.Mode
@@ -162,21 +161,15 @@ end
 
 -- * Knit
 function MapService:KnitInit()
-	Logger:Info(KnitMessageConfig.Initializing)
 	MapContainer.CreateContainer()
-	Logger:Info(KnitMessageConfig.Initialized)
 end
 
 function MapService:KnitStart()
-	Logger:Info(KnitMessageConfig.Starting)
-
 	Players.PlayerRemoving:Connect(function(player)
 		if self._playersAtTransition:Has(player) then
 			self:_onTransitionFinished(player, self._currentTransitionId)
 		end
 	end)
-
-	Logger:Info(KnitMessageConfig.Started)
 end
 
 return MapService

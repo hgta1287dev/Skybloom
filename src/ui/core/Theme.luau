@@ -355,7 +355,6 @@ Theme.Components = {
 		ZIndex = 0,
 		Visible = true,
 	},
-
 	ScrollPane = {
 		Size = UDim2.fromScale(1, 1),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -371,7 +370,7 @@ Theme.Components = {
 		Transparency = 1,
 		Clips = true,
 
-		ScrollBarThickness = 4,
+		ScrollBarThickness = 2,
 		ScrollBarColor = Theme.Semantic.Text.Primary,
 		ScrollBarTransparency = 0.5,
 
@@ -464,6 +463,19 @@ Theme.Components = {
 		LayoutOrder = 0,
 		ZIndex = 0,
 		Visible = true,
+
+		Interactable = true,
+		UseEffect = true,
+
+		HoverStyleProps = {
+			BackgroundColor3 = Theme.Semantic.Surface.Muted,
+		},
+		ClickStyleProps = {
+			BackgroundColor3 = Theme.Semantic.Surface.Base,
+		},
+
+		HoverStyleInfo = TweenInfo.new(0.72, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		ClickStyleInfo = TweenInfo.new(0.52, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
 	},
 
 	Divider = {

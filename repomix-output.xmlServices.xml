@@ -1,0 +1,3948 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/services
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/services/CameraProxyService/CameraProxyContainer.luau
+src/services/CameraProxyService/CameraProxyFactory.luau
+src/services/CameraProxyService/Client.luau
+src/services/CameraProxyService/Server.luau
+src/services/CameraService/CameraModule.luau
+src/services/CameraService/CameraRemote.luau
+src/services/CameraService/Client.luau
+src/services/CharacterService/Client.luau
+src/services/CharacterService/Server.luau
+src/services/GameStateService/Client.luau
+src/services/GameStateService/GameStates.luau
+src/services/GameStateService/Server.luau
+src/services/LightingService/Client.luau
+src/services/LightingService/LightingComposer.luau
+src/services/LightingService/LightingManager.luau
+src/services/LightingService/LightingPresets.luau
+src/services/LightingService/LightingSemantic.luau
+src/services/LightingService/LightingTypes.luau
+src/services/MapService/Client.luau
+src/services/MapService/MapContainer.luau
+src/services/MapService/MapFactory.luau
+src/services/MapService/MapModulesManager.luau
+src/services/MapService/Server.luau
+src/services/RoomService/Client.luau
+src/services/RoomService/RoomConfig.luau
+src/services/RoomService/RoomTypes.luau
+src/services/RoomService/Server.luau
+src/services/TestService/Client.luau
+src/services/TestService/Server.luau
+src/services/WindService/Client.luau
+src/services/WindService/WindShakeModule/init.luau
+src/services/WindService/WindShakeModule/Settings.luau
+src/services/WindService/WindShakeModule/VectorMap.luau
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/services/CameraService/CameraModule.luau">
+--\\----- [CAMERA SERVICE] -----//--
+--[[
+    Open-sourced, custom camera system for Roblox experiences.
+    Find more ease in implementing beautiful, breath-taking camera effects into your place.
+	
+	DevForums Post: https://devforum.roblox.com/t/cameraservice-a-new-camera-for-a-new-roblox/1988655/
+	GitHub Link: https://github.com/LugicalDev/CameraService
+
+    API REFERENCE:
+    > :SetCameraView(__type: string)
+    Sets the camera to a certain view, such as first person, shift-lock, or some other.
+    Will error if CameraService cannot find the camera view.
+
+    > :CreateNewCameraView(id: string, settingsArray: table)
+    Adds a new camera view that the camera can be set to.
+    settingsArray should have values for camera view properties as seen below.
+    If no value is provided, a default one will be placed within.
+
+    > :LockCameraPanning(xAxis: boolean, yAxis: boolean, lockAtX: number, lockAtY: number)
+    Locks camera movement from right-to-left (x-axis) or up-down (y-axis)
+	3rd and 4th parameters are optional. If the camera is locked, it'll lock at the rotation of those parameters.
+	Input should be in degrees for that.
+
+    > :SetCameraHost(newHost: BasePart)
+    Has the camera focus in on the input part. Must be a BASEPART (not a model).
+    To reset the host back to the player's character, you can leave the parameters blank.
+
+    > :Change(property: string, val: any, changeDefaultProperty: boolean)
+    Properties include:
+        "CharacterVisibility" (string): Determines what part of the character is visible.
+        when it's the host. "All" shows all parts, "Body" hides the head, & "None" hides the whole body.
+        "MinZoom" (number): Determines how close the player can zoom in. In studs.
+        "MaxZoom" (number): Determines how far the player can zoom out. In studs.
+        "Zoom" (number): The current distance the camera is away from the host.
+        "Smoothness" (number): Determines how smooth the camera movement is.
+        	Intervals from 0-1 are suggested. Intervals higher could be used to create a "cinematic" effect.
+        "Offset" (CFrame): Determines the offset/positioning away from the camera host.
+        	Can be used to simulate shift-lock.
+		"Wobble" (number): Adjusts the factor for dynamic wobbling. Same functionality as :SetWobbling
+        "LockMouse" (boolean): Has the mouse locked in at the center.
+		"AlignChar" (boolean): If set to true, the character will rotate itself based off the camera (highly advised for shift-locks and first person)
+		"BodyFollow" (boolean): If AlignChar is NOT enabled, BodyFollow allows for an effect that has the upper body slightly rotate based off the mouse location.
+
+    > :ChangeSensitivity(val: number)
+    Changes the rate at which the camera moves. 
+    Merely adjusts the UserInputServiceService.MouseDeltaSensitivity property. 
+    NOTICE: Players CAN change this themselves manually through the Roblox menu.
+
+    > :ChangeFOV(val: number, instant: boolean)
+    Gradually changes the field-of-view of the current camera.
+    If you want the change to be instantaneous, add a second parameter marked true. 
+    Changing FOV directly with the actual camera object is still possible.
+
+    > :Shake(intensity: number, duration: number) (YIELDING FUNCTION)
+    Creates a shaking camera effect in which the screen is, well, shaking. Like an earthquake. 
+    Intensity should be a number greater than 0, preferably in the 0-1 range. Duration is in seconds.
+
+    > :Tilt(degree: number)
+    Tilts the camera across the z-axis on whatever object it is currently focusing on. 
+    Useful for creating camera effects. Input a number in degrees.
+
+    > :TiltAllAxes(y: number, x: number, z: number)
+    Like :Tilt, but allows you to adjust all 3 axes. Most likely use-case would be for creating camera effects.
+    Inputs in Y, X, Z order.
+
+    > :SetWobbling(value: number)
+    Changes the wobble value of the given Camera property.  This is equivalent to - CameraService:Change("Wobble", value, false)
+    Input a number.
+
+    > :SetVerticalRange(angle: number)
+    Changes the vertical range of motion (i.e. how far up and down a player can look).
+    Input a number in degrees from 0 (least range of motion) to 89 (most).
+
+    Created by @Lugical | Relased September, 2022
+    Version 2.2.0 | Aug. 2024
+--]]
+
+math.randomseed(tick())
+---> Services <---
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+---> Player & Camera Objects <---
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+local cam = workspace.CurrentCamera or workspace:WaitForChild("Camera")
+
+---> Camera System Variables <---
+local TWEEN_INFO = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local currentCamPosition = Vector3.zero
+local cameraRotation = Vector2.zero
+local currentCharacter = player.Character or player.CharacterAdded:Wait()
+local offset = Vector3.zero
+local updateShake = 0
+local delta = 0
+local differenceVector = Vector2.zero
+local waistCache
+local neckCache
+
+--> Built-in camera views
+local cameraSettings = {
+	["Default"] = {},
+	["FirstPerson"] = {
+		Wobble = 2.25,
+		CharacterVisibility = "None",
+		Smoothness = 1,
+		RotSmoothness = 0,
+		Zoom = 0,
+		AlignChar = true,
+		Offset = CFrame.new(0, 0, 0),
+		LockMouse = true,
+		MinZoom = 0,
+		MaxZoom = 0,
+		BodyFollow = true,
+	},
+	["FirstPersonVariant"] = {
+		Wobble = 2.25,
+		CharacterVisibility = "Body",
+		Smoothness = 0.35,
+		RotSmoothness = 0,
+		Zoom = 0,
+		AlignChar = true,
+		Offset = CFrame.new(0, 0.2, 0.75),
+		LockMouse = true,
+		MinZoom = 0,
+		MaxZoom = 0,
+		BodyFollow = true,
+	},
+	["Orbital"] = {
+		Wobble = 2,
+		CharacterVisibility = "All",
+		Smoothness = 0.9,
+		Zoom = 10,
+		AlignChar = false,
+		Offset = CFrame.new(0, 0, 0),
+		LockMouse = false,
+		MinZoom = 10,
+		MaxZoom = 25,
+		BodyFollow = true,
+	},
+	["ThirdPerson"] = {
+		Wobble = 2,
+		CharacterVisibility = "All",
+		Smoothness = 0.7,
+		Zoom = 10,
+		AlignChar = false,
+		Offset = CFrame.new(0, 0, 0),
+		LockMouse = false,
+		MinZoom = 5,
+		MaxZoom = 25,
+		BodyFollow = true,
+	},
+	["ShiftLock"] = {
+		Wobble = 4,
+		CharacterVisibility = "All",
+		Smoothness = 0.7,
+		Zoom = 7.5,
+		Offset = CFrame.new(1.75, 0.5, 1),
+		LockMouse = true,
+		AlignChar = true,
+		MinZoom = 2,
+		MaxZoom = 15,
+		BodyFollow = true,
+	},
+	["Cinematic"] = {
+		Smoothness = 5,
+		CharacterVisibility = "All",
+		MinZoom = 10,
+		MaxZoom = 10,
+		Zoom = 10,
+		AlignChar = false,
+		Offset = CFrame.new(),
+		LockMouse = false,
+		BodyFollow = false,
+		Wobble = 0,
+	},
+}
+
+--> Connections when system is running. Clears out when not in use
+local connectionList: { RBXScriptConnection } = {}
+
+--> For camera views
+local propertyTypes = {
+	["CharacterVisibility"] = "All",
+	["Smoothness"] = 0.2, --> If you're looking to get a smooth effect, I HIGHLY suggest values of 0.3+
+	["Zoom"] = 20,
+	["RotSmoothness"] = 1,
+	["AlignChar"] = false,
+	["Offset"] = CFrame.new(),
+	["MinZoom"] = 8,
+	["MaxZoom"] = 25,
+	["LockMouse"] = false,
+	["BodyFollow"] = true,
+	["Wobble"] = 0.1,
+}
+
+local function createHost()
+	local part = Instance.new("Part")
+	part.Name = "Host"
+	part.Anchored = true
+	part.CanCollide = false
+	part.Transparency = 0.5
+	part.Parent = workspace
+
+	return part
+end
+
+---> Module <---
+local CameraService = {
+	Offset = CFrame.new(),
+	TiltFactor = CFrame.fromEulerAnglesYXZ(0, 0, 0),
+	Angle = 60,
+	Host = createHost(), -- TODO Test here!
+}
+
+---> Camera System Functions <---
+
+--> @hideBodyParts: helper function setting up CharacterVisibility
+local function hideBodyParts(__type: string)
+	if currentCharacter then
+		--> Set-up the rotation for shift-locking
+		local hum = currentCharacter:FindFirstChildWhichIsA("Humanoid")
+		if hum then
+			hum.AutoRotate = not CameraService.AlignChar and true or false
+		end
+
+		--> Hide/unhide body parts when changing between views
+		for _, v in ipairs(currentCharacter:GetChildren()) do
+			if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+				--> Run logic for parts within parts
+				if v:GetDescendants() then
+					for _, child in ipairs(v:GetDescendants()) do
+						if child:IsA("BasePart") or child:IsA("Decal") then
+							child.LocalTransparencyModifier = __type and __type == "All" and 0 or 1
+						end
+					end
+				end
+
+				--> If no __type, hide everything
+				if __type then
+					v.LocalTransparencyModifier = __type == "All" and 0
+						or __type == "Body" and v.Name == "Head" and 1
+						or 0
+				else
+					v.LocalTransparencyModifier = 1
+				end
+			elseif v:IsA("Accessory") and v:FindFirstChildWhichIsA("BasePart") then
+				--> Set the hiding logic
+				for _, child in ipairs(v:GetDescendants()) do
+					if child:IsA("BasePart") or child:IsA("Decal") then
+						child.LocalTransparencyModifier = __type and __type == "All" and 0 or 1
+					end
+				end
+			end
+		end
+	else
+		warn("[CameraService] Cannot find a host that is a Character model.")
+	end
+end
+
+--> @calculateShakingOffset: shakes the camera each frame w/an offset
+local function calculateShakingOffset(intensity: number): Vector3
+	local multipliers = { -1, 1 }
+	--> Use sin/cos for sense of randomness
+	local currentSeed = math.random(1, os.time()) * multipliers[math.random(1, #multipliers)]
+	local x = math.sin(currentSeed) * (intensity * 1.5 ^ 2) / 3
+	local y = math.clamp(math.cos(currentSeed) * (intensity * 1.5 ^ 1.5), 0, 10) / 3
+	--> Only offset Z in non-first-person views
+	local z = CameraService.CharacterVisibility == "All" and (math.cos(currentSeed) / 2) * intensity / 5 or 0
+
+	return Vector3.new(x, y, z) * math.max(CameraService.Smoothness ^ 2 * 0.5, 1)
+end
+
+--> @raycastWorld: correct zooms to avoid clipping parts
+local function raycastWorld(origin, direction)
+	--> Set params w/blacklist
+	local params = RaycastParams.new()
+	params.IgnoreWater = true
+	if
+		CameraService.Host.Parent
+		and CameraService.Host.Parent ~= workspace
+		and CameraService.Host.Parent:IsA("Model")
+	then
+		params.FilterDescendantsInstances = { currentCharacter, CameraService.Host.Parent }
+	else
+		params.FilterDescendantsInstances = { currentCharacter, CameraService.Host }
+	end
+	local pos = (currentCamPosition + offset) -- no Offset property applied yet
+	--> Allow clipping through transluscent parts
+	local landRay = workspace:Raycast(origin, direction, params)
+	if landRay and landRay.Distance and landRay.Instance then
+		if landRay.Instance:IsA("BasePart") or landRay.Instance:IsA("UnionOperation") then
+			direction *= (landRay.Distance * 0.9 / direction.Magnitude)
+		else
+			direction *= (landRay.Distance * 0.95 / direction.Magnitude)
+		end
+	end
+
+	--> Cframe * Vector3 to zoom out in proper direction.
+	return origin + direction
+end
+
+--> @updateCamera: update camera orientation + pos @ each frame
+local lapsed = 1000 --> Used for dampening while jumping/falling
+local arrowKeyAngle = 0
+local pastCamRot = CFrame.Angles(0, 0, 0)
+local function updateCamera(deltaTime: number)
+	local self = CameraService
+	--> Console has different inputs + logic. This helps set up CONSOLE camera movement
+	if UserInputService.GamepadEnabled then
+		cameraRotation -= differenceVector
+	else
+		differenceVector = Vector2.zero
+	end
+	--> Clamp the y-vals for camera rotating
+	cameraRotation = Vector2.new(
+		self.xLock and self.atX or cameraRotation.X,
+		self.yLock and self.atY or math.clamp(cameraRotation.Y, math.rad(-self.Angle), math.rad(self.Angle))
+	)
+
+	currentCamPosition = self.Host.Position
+		+ Vector3.new(0, self.Host.Parent and self.Host.Parent == currentCharacter and 2.5 or 0, 0)
+
+	--> Convert cameraRotation into an angle CFrame (YXZ = Angles)
+	if UserInputService:IsKeyDown(Enum.KeyCode.Right) then
+		arrowKeyAngle += 0.045
+	elseif UserInputService:IsKeyDown(Enum.KeyCode.Left) then
+		arrowKeyAngle -= 0.045
+	end
+	local rotationCFrame = CFrame.fromEulerAnglesYXZ(cameraRotation.Y, cameraRotation.X - arrowKeyAngle, 0)
+	updateShake = updateShake < math.random(2, 3) and updateShake + 1 or 0
+	offset = self.Shaking and offset and updateShake == 0 and calculateShakingOffset(self.ShakingIntensity)
+		or self.Shaking and offset
+		or Vector3.new(0, 0, 0)
+	local yCFOffset = CFrame.fromEulerAnglesYXZ(0, 0, 0)
+	if self.Wobble and self.Wobble > 0 then
+		--> For slight camera tilting for footsteps
+		pcall(function()
+			local yOff = currentCharacter.Humanoid.RigType == Enum.HumanoidRigType.R15
+					and (currentCharacter["LeftFoot"].Position.Y - currentCharacter["RightFoot"].Position.Y) / 1.5
+				or currentCharacter.Humanoid.RigType == Enum.HumanoidRigType.R6 and (currentCharacter["Left Leg"].Position.Y - currentCharacter["Right Leg"].Position.Y)
+				or 0
+			yCFOffset = CFrame.fromEulerAnglesYXZ(0, 0, math.rad(yOff / self.Wobble))
+		end)
+	end
+
+	--> Damping the motion of the camera for smoothing
+	local desiredTime = self.Smoothness ^ 2 * 0.05 + 0.02 * self.Smoothness + 0.005
+	local lerpFactor = math.min(1, deltaTime / desiredTime)
+
+	if self.MinZoom == 0 and self.MaxZoom == 0 and self.RotSmoothness > self.Smoothness then
+		local desiredTime2 = self.RotSmoothness ^ 2 * 0.05 + 0.02 * self.RotSmoothness + 0.005
+		local lerpFactor2 = math.min(1, deltaTime / desiredTime2)
+		rotationCFrame = self.RotSmoothness > 0 and pastCamRot:Lerp(rotationCFrame, lerpFactor2) or rotationCFrame
+	end
+
+	pastCamRot = rotationCFrame
+	local camCFrame = (rotationCFrame * self.Offset * self.TiltFactor)
+		+ currentCamPosition
+		+ offset
+		+ (rotationCFrame * Vector3.new(0, 0, self.Zoom))
+	local camPos = raycastWorld(currentCamPosition + offset, camCFrame.p - offset - currentCamPosition)
+	camCFrame = (camCFrame - camCFrame.p) + camPos
+	local targetCFrame = cam.CFrame:Lerp(camCFrame, lerpFactor)
+	local desired2 = desiredTime
+	local lerp2
+	if self.Zoom > 0 and self.Smoothness > 0 then
+		--> @damper: Increases damping factor for vertical motion
+		local function damper()
+			local hum = currentCharacter:FindFirstChild("Humanoid")
+			local humState
+
+			if hum then
+				humState = hum:GetState()
+			end
+
+			if (humState == Enum.HumanoidStateType.Jumping) or (humState == Enum.HumanoidStateType.Freefall) then
+				lapsed = 0
+				return desiredTime * 3.33
+			end
+			lapsed += 1
+			if lapsed < 1 / deltaTime then
+				return desiredTime * 3.33
+			else
+				return math.max(desiredTime, desiredTime * (3.33 - (lapsed - (1 / deltaTime)) * 0.03))
+			end
+		end
+		desired2 = damper()
+	end
+
+	lerp2 = desired2 ~= desiredTime and cam.CFrame:Lerp(camCFrame, math.min(1, deltaTime / desired2)) or nil
+	cam.CFrame = self.Smoothness <= 0 and camCFrame
+		or CFrame.new(targetCFrame.X, lerp2 and lerp2.Y or targetCFrame.Y, targetCFrame.Z)
+			* targetCFrame.Rotation
+			* yCFOffset
+
+	--> Extraneous character alignment features if needed
+	if self.Host.Parent == currentCharacter then
+		workspace.Retargeting = Enum.AnimatorRetargetingMode.Disabled
+		local humanoid, root =
+			currentCharacter:FindFirstChild("Humanoid"), currentCharacter:FindFirstChild("HumanoidRootPart")
+		if humanoid and humanoid.Health > 0 then
+			local waist = humanoid.RigType == Enum.HumanoidRigType.R15
+					and currentCharacter.UpperTorso:FindFirstChildWhichIsA("Motor6D")
+				or nil
+			local neck = humanoid.RigType == Enum.HumanoidRigType.R15
+					and currentCharacter.Head:FindFirstChildWhichIsA("Motor6D")
+				or nil
+			if waist and not waistCache then
+				waistCache = waist.C0
+			end
+			if neck and not neckCache then
+				neckCache = neck.C0
+			end
+			if self.AlignChar and humanoid.FloorMaterial ~= Enum.Material.Water then
+				if waist and waistCache and waist.C0 ~= waistCache then
+					waist.C0 = waistCache
+				end
+				if neck and neckCache and neck.C0 ~= neckCache then
+					neck.C0 = neckCache
+				end
+				local _, x, _ = camCFrame:ToEulerAnglesYXZ()
+				root.CFrame = CFrame.fromEulerAnglesYXZ(0, x + math.rad(self.Offset.X == 0 and 0 or -6), 0)
+					+ root.Position
+			elseif humanoid.RigType == Enum.HumanoidRigType.R15 then
+				if self.BodyFollow then
+					waist.C0 = waist.C0:Lerp(
+						(
+							CFrame.fromEulerAnglesYXZ(
+								math.rad(mouse.Hit.LookVector:Dot(Vector3.new(0, 1, 0)) * 10),
+								math.rad(
+									mouse.Hit.LookVector:Dot(
+										(CFrame.Angles(root.CFrame:ToEulerAnglesYXZ()) * CFrame.new(-1, 0, 0)).Position.Unit
+									) * 40
+								),
+								0
+							) + waistCache.Position
+						),
+						0.25
+					)
+					neck.C0 = neck.C0:Lerp(
+						(
+							CFrame.fromEulerAnglesYXZ(
+								math.rad(mouse.Hit.LookVector:Dot(Vector3.new(0, 1, 0)) * 30),
+								0,
+								0
+							) + neckCache.Position
+						),
+						0.25
+					)
+					if waist and not waistCache then
+						waistCache = waist.C0
+					end
+					if neck and not neckCache then
+						neckCache = neck.C0
+					end
+				else
+					if waist and waistCache and waist.C0 ~= waistCache then
+						waist.C0 = waistCache
+					end
+					if neck and neckCache and neck.C0 ~= neckCache then
+						neck.C0 = neckCache
+					end
+				end
+			end
+		end
+	end
+end
+
+--> @SetCameraView: Changes the game-cam to a new view, disabling the old
+function CameraService:SetCameraView(__type: string) --> Used to change views (i.e. from 1st to 3rd)
+	assert(cameraSettings[__type] ~= nil, "[CameraService] Camera view not found for ID: " .. tostring(__type))
+
+	self.CameraView = __type
+	for i, v in pairs(cameraSettings[__type]) do
+		self[i] = v
+	end
+	for _, connection in pairs(connectionList) do
+		connection:Disconnect()
+	end
+
+	--> Check what camera view the user wants
+	if __type == "Default" then
+		--> Resets it back to non-scriptable, Roblox default camera
+		self.LockMouse = false
+		cam.CameraSubject = currentCharacter:WaitForChild("Humanoid")
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		cam.CameraType = Enum.CameraType.Custom
+		workspace.Retargeting = Enum.AnimatorRetargetingMode.Default
+		currentCharacter:WaitForChild("Humanoid").AutoRotate = true
+	elseif cameraSettings[__type] then
+		--> Add in settings
+		workspace.Retargeting = Enum.AnimatorRetargetingMode.Disabled
+		if self.Host.Parent and self.Host.Parent == currentCharacter then
+			hideBodyParts(self.CharacterVisibility ~= "None" and self.CharacterVisibility or nil)
+		end
+		UserInputService.MouseBehavior = self.LockMouse and __type ~= "Default" and Enum.MouseBehavior.LockCenter
+			or Enum.MouseBehavior.Default
+		cam.CameraType = Enum.CameraType.Scriptable
+		cam.CameraSubject = nil
+
+		--> @updateZoom: for camera zooming in/out
+		local function updateZoom(input, gpe)
+			if not gpe then
+				if input.UserInputType == Enum.UserInputType.MouseWheel then --> Computer (mouse)
+					local multiplier = input.Position.Z
+					self.Zoom = math.clamp(
+						self.Zoom - (multiplier * (self.MaxZoom - self.MinZoom) / 4),
+						self.MinZoom,
+						self.MaxZoom
+					)
+				elseif
+					input.UserInputState == Enum.UserInputState.Begin
+					and (input.KeyCode == Enum.KeyCode.I or input.KeyCode == Enum.KeyCode.O)
+				then --> Computer (I/O)
+					local multiplier = input.KeyCode == Enum.KeyCode.I and 1 or -1
+					self.Zoom = math.clamp(
+						self.Zoom - (multiplier * (self.MaxZoom - self.MinZoom) / 4),
+						self.MinZoom,
+						self.MaxZoom
+					)
+				elseif input.KeyCode == Enum.KeyCode.ButtonR3 and input.UserInputState == Enum.UserInputState.Begin then --> Console Joystick Press
+					self.Zoom = self.Zoom - ((self.MaxZoom - self.MinZoom) / 4) < self.MinZoom and self.MaxZoom
+						or self.Zoom - ((self.MaxZoom - self.MinZoom) / 4)
+				end
+			end
+		end
+
+		--> @onInputChange: stores input, convert to Vector2 with rotation data
+		local function onInputChange(input, gpe)
+			updateZoom(input, gpe)
+			local rightHold = self.LockMouse or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+			local mobile = input.UserInputType == Enum.UserInputType.Touch
+			local console = input.UserInputType == Enum.UserInputType.Gamepad1
+				and input.KeyCode == Enum.KeyCode.Thumbstick2
+			if
+				(not gpe or (not mobile and not console))
+				and (rightHold or mobile or console)
+				and input.UserInputState == Enum.UserInputState.Change
+			then
+				delta = console and input.Position / 15 * math.sqrt(UserInputService.MouseDeltaSensitivity)
+					or input.Delta --> Get mouse position
+				differenceVector = console and Vector2.new(delta.X, -delta.Y)
+					or {
+						X = math.sqrt(math.abs(delta.X)) / (mobile and 27 or 50),
+						Y = math.sqrt(math.abs(delta.Y)) / (mobile and 27 or 50),
+					}
+				--> Adjust the positions
+				if console then
+					differenceVector = Vector2.new(
+						if delta.X < 0.2 / 15 * math.sqrt(UserInputService.MouseDeltaSensitivity)
+								and delta.X > -0.2 / 15 * math.sqrt(UserInputService.MouseDeltaSensitivity)
+							then 0
+							else delta.X,
+						if -delta.Y < 0.2 / 15 * math.sqrt(UserInputService.MouseDeltaSensitivity)
+								and -delta.Y > -0.2 / 15 * math.sqrt(UserInputService.MouseDeltaSensitivity)
+							then 0
+							else -delta.Y
+					)
+				else
+					differenceVector = Vector2.new(
+						if delta.X > 0 then 1 * differenceVector.X else -1 * differenceVector.X,
+						if delta.Y > 0 then 1 * differenceVector.Y else -1 * differenceVector.Y
+					)
+				end
+				--> Update rotation once if not console; console updates rotation on each frame
+				if not console then
+					cameraRotation -= differenceVector
+					cameraRotation = Vector2.new(
+						self.xLock and self.atX or cameraRotation.X,
+						self.yLock and self.atY
+							or math.clamp(cameraRotation.Y, math.rad(-self.Angle), math.rad(self.Angle))
+					)
+				end
+			end
+			UserInputService.MouseBehavior = self.LockMouse and Enum.MouseBehavior.LockCenter
+				or rightHold and Enum.MouseBehavior.LockCurrentPosition
+				or Enum.MouseBehavior.Default
+		end
+
+		--> Disconnect any active connections
+		for _, connection in pairs(connectionList) do
+			connection:Disconnect()
+		end
+
+		--> Mobile Compatibility
+		if UserInputService.TouchEnabled then
+			table.insert(connectionList, UserInputService.TouchPan:Connect(onInputChange))
+			table.insert(connectionList, UserInputService.TouchRotate:Connect(onInputChange))
+			local pinchDelta = 0
+			table.insert(
+				connectionList,
+				UserInputService.TouchPinch:Connect(function(_, scale, _, state, gpe)
+					self.Zoom = gpe and self.Zoom
+						or state == Enum.UserInputState.Begin and self.Zoom
+						or math.clamp(
+							self.Zoom - ((pinchDelta and scale - pinchDelta or 0) * 20),
+							self.MinZoom,
+							self.MaxZoom
+						)
+					pinchDelta = scale
+				end)
+			)
+		end
+
+		--> Set up the input connections
+		table.insert(connectionList, UserInputService.InputBegan:Connect(onInputChange))
+		table.insert(connectionList, UserInputService.InputChanged:Connect(onInputChange))
+		table.insert(connectionList, UserInputService.InputEnded:Connect(onInputChange))
+		--> Set up the actual system to run
+		table.insert(connectionList, RunService.PreSimulation:Connect(updateCamera))
+
+		--> Special effects for the CINEMATIC VIEW
+		if __type == "Cinematic" then
+			local ui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+			ui.Name = "CameraService_Cinematic_Effect"
+			ui.Enabled = true
+			ui.ResetOnSpawn = false
+			ui.IgnoreGuiInset = true
+			local uiFrame1 = Instance.new("Frame", ui)
+			uiFrame1.BackgroundColor3 = Color3.new(0, 0, 0)
+			uiFrame1.Name = "Frame1"
+			uiFrame1.BorderSizePixel = 0
+			uiFrame1.Size = UDim2.new(1, 0, 0.135, 0)
+			local uiFrame2 = uiFrame1:Clone()
+			uiFrame2.Parent = ui
+			uiFrame2.Name = "Frame2"
+
+			uiFrame1.Position = UDim2.new(0, 0, -0.136, 0)
+			uiFrame2.Position = UDim2.new(0, 0, 1, 0)
+
+			uiFrame1:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Sine", 0.25, true)
+			uiFrame2:TweenPosition(UDim2.new(0, 0, 0.865, 0), "Out", "Sine", 0.25, true)
+		else
+			local ui = player:WaitForChild("PlayerGui"):FindFirstChild("CameraService_Cinematic_Effect")
+			if ui then
+				local uiFrame1 = ui:FindFirstChild("Frame1")
+				local uiFrame2 = ui:FindFirstChild("Frame2")
+				if uiFrame1 then
+					uiFrame1:TweenPosition(UDim2.new(0, 0, -0.1360, 0), "Out", "Sine", 0.25, true)
+				end
+				if uiFrame2 then
+					uiFrame2:TweenPosition(UDim2.new(0, 0, 1, 0), "Out", "Sine", 0.25, true)
+				end
+				task.wait(0.25)
+				ui:Destroy()
+			end
+		end
+	end
+end
+
+--> @CreateNewCameraView: Creates new cam view w/inputs
+function CameraService:CreateNewCameraView(id: string, settingsArray: {})
+	--> Make sure that settingsArray is a table to ensure all runs well
+	assert(
+		typeof(settingsArray) == "table",
+		"[CameraService] 2nd parameter should be a table for :CreateNewCameraView()"
+	)
+
+	--> Register the new view
+	cameraSettings[id] = settingsArray
+	for property, default in pairs(propertyTypes) do
+		if cameraSettings[id][property] == nil then
+			warn(
+				'[CameraService] The "' .. property .. '" property was set to the default value: ' .. tostring(default)
+			)
+			cameraSettings[id][property] = default
+		end
+	end
+end
+
+--> @LockCameraPanning: locks panning on a certain direction.
+--> Great for emulating 2D systems + games on Roblox
+function CameraService:LockCameraPanning(lockXAxis: boolean, lockYAxis: boolean, lockAtX: number, lockAtY: number)
+	--> Set up the camera orientation
+	self.atX = lockAtX and math.rad(lockAtX) or 0
+	self.atY = lockAtY and math.rad(lockAtY) or 0
+	--> Lock if necessary
+	self.xLock = lockXAxis
+	self.yLock = lockYAxis
+end
+
+--> @SetCameraHost: for when you change the object the camera focuses on
+function CameraService:SetCameraHost(newHost: BasePart)
+	assert(
+		not newHost or typeof(newHost) == "Instance" and newHost:IsA("BasePart"),
+		"[CameraService] :SetCameraHost() only accepts a BasePart parameter, or none at all. "
+	)
+	self.Host = newHost or currentCharacter:FindFirstChild("HumanoidRootPart")
+end
+
+--> @Change: changes camera aspects/properties.
+function CameraService:Change(property: string, newVal: any, changeDefaultProperty: boolean)
+	--> Make sure the requested property to change is valid
+	assert(
+		propertyTypes[property] ~= nil,
+		'[CameraService] "' .. tostring(property) .. '" is not a valid property to change.'
+	)
+
+	self[property] = newVal
+	if changeDefaultProperty then --> Change the camera view's default setting, if wanted
+		cameraSettings[self.CameraView][property] = newVal
+	end
+end
+
+--> @ChangeSensitivity: adjusts the player's mouse deltas as needed
+--> You can also just alter MouseDeltaSensitivity in UserInputService directly.
+--> This is here in case you forget :3
+function CameraService:ChangeSensitivity(val: number)
+	--> Make sure that "val" is positive before doing anything
+	assert(type(val) == "number" and val > 0, "[CameraService] Sensitivity should be greater than 0.")
+	UserInputService.MouseDeltaSensitivity = val
+end
+
+--> @ChangeFOV: POV: your FOV changes. Great for sprinting effects!
+function CameraService:ChangeFOV(val: number, instant: boolean)
+	--> Make sure that "val" is positive before doing anything
+	assert(type(val) == "number" and val > 0, "[CameraService] FieldOfView should be greater than 0.")
+
+	--> Set up FOV logic
+	if instant then
+		cam.FieldOfView = val
+	else
+		local tween = TweenService:Create(cam, TWEEN_INFO, { FieldOfView = val })
+		tween:Play()
+		tween.Completed:Wait()
+		tween:Destroy()
+	end
+end
+
+--> @Shake: quakes more than Quaker Oats.
+function CameraService:Shake(intensity: number, duration: number)
+	--> Make sure that arguments are positive before doing anything
+	assert(duration > 0 and intensity > 0, "[CameraService] Inputs for :Shake() must be positive")
+
+	--> Logic
+	self.ShakingIntensity = intensity --> Property for shake
+	self.Shaking = true --> Actively shaking or not
+	task.wait(tonumber(duration))
+	self.Shaking = false
+end
+
+--> @Tilt: converts degree to rads. Tilt go brr.
+function CameraService:Tilt(degree: number)
+	self.TiltFactor = CFrame.fromEulerAnglesYXZ(0, 0, math.rad(degree) or 0)
+end
+
+--> @TiltAllAxes: converts degree to rads., but in all axes!!! Tilt go brr.
+function CameraService:TiltAllAxes(x: number, y: number, z: number)
+	self.TiltFactor = CFrame.fromEulerAnglesYXZ(y and math.rad(y) or 0, x and math.rad(x) or 0, z and math.rad(z) or 0)
+end
+
+--> @SetWobbling: set up dynamic wobbling (interchangeable w/:Change())
+function CameraService:SetWobbling(value: number)
+	self.Wobble = value
+end
+
+--> @SetVerticalRange: set up the vertical range for angles
+function CameraService:SetVerticalRange(angle: number) --> DO INPUT IN DEGREES
+	self.Angle = math.clamp(math.abs(angle), 0, 89)
+end
+
+--> Have camera reset focus to new character.
+player.CharacterAdded:Connect(function(char)
+	if
+		not CameraService.Host
+		or (not CameraService.Host:IsDescendantOf(workspace))
+		or (tostring(CameraService.Host.Parent) == player.Name)
+	then
+		currentCharacter = char
+		CameraService:SetCameraHost(char:WaitForChild("HumanoiRootPart"))
+	end
+end)
+
+return CameraService
+</file>
+
+<file path="src/services/WindService/WindShakeModule/init.luau">
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+local Settings = require(script.Settings)
+local VectorMap = require(script.VectorMap)
+
+local COLLECTION_TAG = "WindShake"
+local RENDER_NAME = "WindSystemRender"
+local RENDER_PRIORITY = Enum.RenderPriority.Last.Value + 1000
+
+local FALLBACK_SETTINGS = {
+	WindDirection = Vector3.new(0.5, 0, 0.5),
+	WindSpeed = 5,
+	WindPower = 3,
+}
+
+-----------------------------------------------------------------------------------------------------------------
+
+local ObjectShakeAddedEvent = Instance.new("BindableEvent")
+local ObjectShakeRemovedEvent = Instance.new("BindableEvent")
+local ObjectShakeUpdatedEvent = Instance.new("BindableEvent")
+local PausedEvent = Instance.new("BindableEvent")
+local ResumedEvent = Instance.new("BindableEvent")
+
+local WindShake = {
+	RenderDistance = 100,
+	MaxRefreshRate = 1 / 60,
+	SharedSettings = Settings.new(script),
+
+	ObjectMetadata = {},
+	VectorMap = VectorMap.new(),
+
+	Handled = 0,
+	Active = 0,
+
+	_partList = table.create(500),
+	_cframeList = table.create(500),
+
+	ObjectShakeAdded = ObjectShakeAddedEvent.Event,
+	ObjectShakeRemoved = ObjectShakeRemovedEvent.Event,
+	ObjectShakeUpdated = ObjectShakeUpdatedEvent.Event,
+	Paused = PausedEvent.Event,
+	Resumed = ResumedEvent.Event,
+}
+
+export type WindShakeSettings = {
+	WindDirection: Vector3?,
+	WindSpeed: number?,
+	WindPower: number?,
+}
+
+function WindShake:Connect(funcName: string, event: RBXScriptSignal): RBXScriptConnection
+	local callback = self[funcName]
+	assert(typeof(callback) == "function", "Unknown function: " .. funcName)
+
+	return event:Connect(function(...)
+		return callback(self, ...)
+	end)
+end
+
+function WindShake:AddObjectShake(object: BasePart | Bone, settingsTable: WindShakeSettings?)
+	if typeof(object) ~= "Instance" then
+		return
+	end
+
+	if not (object:IsA("BasePart") or object:IsA("Bone")) then
+		return
+	end
+
+	local metadata = self.ObjectMetadata
+
+	if metadata[object] then
+		return
+	else
+		self.Handled += 1
+	end
+
+	metadata[object] = {
+		ChunkKey = self.VectorMap:AddObject(
+			if object:IsA("Bone") then object.WorldPosition else object.Position,
+			object
+		),
+		Settings = Settings.new(object),
+
+		Seed = math.random(5000) * 0.32,
+		Origin = if object:IsA("Bone") then object.WorldCFrame else object.CFrame,
+		LastUpdate = os.clock(),
+	}
+
+	if settingsTable then
+		self:UpdateObjectSettings(object, settingsTable)
+	end
+
+	ObjectShakeAddedEvent:Fire(object)
+end
+
+function WindShake:RemoveObjectShake(object: BasePart | Bone)
+	if typeof(object) ~= "Instance" then
+		return
+	end
+
+	local metadata = self.ObjectMetadata
+	local objMeta = metadata[object]
+
+	if objMeta then
+		self.Handled -= 1
+		metadata[object] = nil
+		objMeta.Settings:Destroy()
+		self.VectorMap:RemoveObject(objMeta.ChunkKey, object)
+
+		if object:IsA("BasePart") then
+			object.CFrame = objMeta.Origin
+		elseif object:IsA("Bone") then
+			object.WorldCFrame = objMeta.Origin
+		end
+	end
+
+	ObjectShakeRemovedEvent:Fire(object)
+end
+
+function WindShake:Update(deltaTime: number)
+	debug.profilebegin("WindShake")
+
+	local active = 0
+
+	debug.profilebegin("Update")
+
+	local now = os.clock()
+	local slowerDeltaTime = deltaTime * 3
+	local step = math.min(1, deltaTime * 5)
+
+	-- Reuse tables to avoid garbage collection
+	local bulkMoveIndex = 0
+	local partList = self._partList
+	local cframeList = self._cframeList
+	table.clear(partList)
+	table.clear(cframeList)
+
+	-- Cache hot values
+	local objectMetadata = self.ObjectMetadata
+	local camera = workspace.CurrentCamera
+	local cameraPos = camera.CFrame.Position
+	local renderDistance = self.RenderDistance
+	local maxRefreshRate = self.MaxRefreshRate
+	local sharedSettings = self.SharedSettings
+	local sharedWindPower = sharedSettings.WindPower
+	local sharedWindSpeed = sharedSettings.WindSpeed
+	local sharedWindDirection = sharedSettings.WindDirection
+
+	-- Update objects in view at their respective refresh rates
+	self.VectorMap:ForEachObjectInView(camera, renderDistance, function(className: string, object: BasePart | Bone)
+		local objMeta = objectMetadata[object]
+		local lastUpdate = objMeta.LastUpdate or 0
+		local isBone = className == "Bone"
+
+		-- Determine if the object refresh rate
+		local objectCFrame = if isBone then (object :: Bone).WorldCFrame else object.CFrame
+		local distanceAlpha = ((cameraPos - objectCFrame.Position).Magnitude / renderDistance)
+		local distanceAlphaSq = distanceAlpha * distanceAlpha
+		local jitter = (1 / math.random(60, 120))
+		local refreshRate = (slowerDeltaTime * distanceAlphaSq) + maxRefreshRate
+
+		if (now - lastUpdate) + jitter <= refreshRate then
+			-- It is not yet time to update
+			return
+		end
+
+		objMeta.LastUpdate = now
+		active += 1
+
+		local objSettings = objMeta.Settings
+
+		local windDirection = (objSettings.WindDirection or sharedWindDirection)
+		if windDirection.Magnitude < 1e-5 then
+			return
+		end
+
+		local amp = (objSettings.WindPower or sharedWindPower) * 0.2
+		if amp < 1e-5 then
+			return
+		end
+
+		local freq = now * ((objSettings.WindSpeed or sharedWindSpeed) * 0.08)
+		if freq < 1e-5 then
+			return
+		end
+
+		local seed = objMeta.Seed
+		local animValue = (math.noise(freq, 0, seed) + 0.4) * amp
+		local lerpAlpha = math.clamp(step + distanceAlphaSq, 0.1, 0.5)
+		local lowAmp = amp / 3
+
+		local origin = objMeta.Origin * (objSettings.PivotOffset or CFrame.identity)
+		local localWindDirection = origin:VectorToObjectSpace(windDirection)
+
+		if isBone then
+			local bone: Bone = object :: Bone
+			bone.Transform = bone.Transform:Lerp(
+				(
+					CFrame.fromAxisAngle(localWindDirection:Cross(Vector3.yAxis), -animValue)
+					* CFrame.Angles(
+						math.noise(seed, 0, freq) * lowAmp,
+						math.noise(seed, freq, 0) * lowAmp,
+						math.noise(freq, seed, 0) * lowAmp
+					)
+				) + (localWindDirection * animValue * amp),
+				lerpAlpha
+			)
+		else
+			bulkMoveIndex += 1
+			partList[bulkMoveIndex] = object
+			cframeList[bulkMoveIndex] = objectCFrame:Lerp(
+				(
+					origin
+					* CFrame.fromAxisAngle(localWindDirection:Cross(Vector3.yAxis), -animValue)
+					* CFrame.Angles(
+						math.noise(seed, 0, freq) * lowAmp,
+						math.noise(seed, freq, 0) * lowAmp,
+						math.noise(freq, seed, 0) * lowAmp
+					)
+					* (objSettings.PivotOffsetInverse or CFrame.identity)
+				) + (windDirection * animValue * (amp * 2)),
+				lerpAlpha
+			)
+		end
+	end)
+
+	self.Active = active
+
+	debug.profileend()
+
+	workspace:BulkMoveTo(partList, cframeList, Enum.BulkMoveMode.FireCFrameChanged)
+
+	debug.profileend()
+end
+
+function WindShake:Stop()
+	RunService:UnbindFromRenderStep(RENDER_NAME)
+
+	self.Active = 0
+	self.Running = false
+
+	PausedEvent:Fire()
+end
+
+function WindShake:Start()
+	if self.Running then
+		return
+	else
+		self.Running = true
+	end
+
+	-- Connect updater
+	RunService:BindToRenderStep(RENDER_NAME, RENDER_PRIORITY, function(dt)
+		self:Update(dt)
+	end)
+
+	ResumedEvent:Fire()
+end
+
+function WindShake:Init(config: { MatchWorkspaceWind: boolean? }?)
+	if self.Initialized then
+		return
+	end
+
+	-- Define attributes if they're undefined.
+	local power = script:GetAttribute("WindPower")
+	local speed = script:GetAttribute("WindSpeed")
+	local direction = script:GetAttribute("WindDirection")
+
+	if typeof(power) ~= "number" then
+		script:SetAttribute("WindPower", FALLBACK_SETTINGS.WindPower)
+	end
+
+	if typeof(speed) ~= "number" then
+		script:SetAttribute("WindSpeed", FALLBACK_SETTINGS.WindSpeed)
+	end
+
+	if typeof(direction) ~= "Vector3" then
+		script:SetAttribute("WindDirection", FALLBACK_SETTINGS.WindDirection)
+	end
+
+	-- Clear any old stuff.
+	self:Cleanup()
+	self.Initialized = true
+
+	-- Wire up tag listeners.
+	local windShakeAdded = CollectionService:GetInstanceAddedSignal(COLLECTION_TAG)
+	self.AddedConnection = self:Connect("AddObjectShake", windShakeAdded)
+
+	local windShakeRemoved = CollectionService:GetInstanceRemovedSignal(COLLECTION_TAG)
+	self.RemovedConnection = self:Connect("RemoveObjectShake", windShakeRemoved)
+
+	for _, object in CollectionService:GetTagged(COLLECTION_TAG) do
+		self:AddObjectShake(object)
+	end
+
+	-- Wire up workspace wind.
+	if not config or config.MatchWorkspaceWind ~= false then
+		self:MatchWorkspaceWind()
+		self.WorkspaceWindConnection = workspace:GetPropertyChangedSignal("GlobalWind"):Connect(function()
+			self:MatchWorkspaceWind()
+		end)
+	end
+
+	-- Automatically start.
+	self:Start()
+end
+
+function WindShake:Cleanup()
+	if not self.Initialized then
+		return
+	end
+
+	self:Pause()
+
+	if self.AddedConnection then
+		self.AddedConnection:Disconnect()
+		self.AddedConnection = nil
+	end
+
+	if self.RemovedConnection then
+		self.RemovedConnection:Disconnect()
+		self.RemovedConnection = nil
+	end
+
+	if self.WorkspaceWindConnection then
+		self.WorkspaceWindConnection:Disconnect()
+		self.WorkspaceWindConnection = nil
+	end
+
+	table.clear(self.ObjectMetadata)
+	self.VectorMap:ClearAll()
+
+	self.Handled = 0
+	self.Active = 0
+	self.Initialized = false
+end
+
+function WindShake:UpdateObjectSettings(object: Instance, settingsTable: WindShakeSettings)
+	if typeof(object) ~= "Instance" then
+		return
+	end
+
+	if typeof(settingsTable) ~= "table" then
+		return
+	end
+
+	if not self.ObjectMetadata[object] and (object ~= script) then
+		return
+	end
+
+	for key, value in settingsTable do
+		object:SetAttribute(key, value)
+	end
+
+	ObjectShakeUpdatedEvent:Fire(object)
+end
+
+function WindShake:UpdateAllObjectSettings(settingsTable: WindShakeSettings)
+	if typeof(settingsTable) ~= "table" then
+		return
+	end
+
+	for obj, _objMeta in self.ObjectMetadata do
+		for key, value in settingsTable do
+			obj:SetAttribute(key, value)
+		end
+		ObjectShakeUpdatedEvent:Fire(obj)
+	end
+end
+
+function WindShake:SetDefaultSettings(settingsTable: WindShakeSettings)
+	self:UpdateObjectSettings(script, settingsTable)
+end
+
+function WindShake:MatchWorkspaceWind()
+	local workspaceWind = workspace.GlobalWind
+	local windDirection = workspaceWind.Unit
+	local windSpeed, windPower = 0, 0
+
+	local windMagnitude = workspaceWind.Magnitude
+	if windMagnitude > 0 then
+		windPower = if windMagnitude > 1 then math.log10(windMagnitude) + 0.2 else 0.3
+		windSpeed = if windMagnitude < 100 then (windMagnitude * 1.2) + 5 else 125
+	end
+
+	self:SetDefaultSettings({
+		WindDirection = windDirection,
+		WindSpeed = windSpeed,
+		WindPower = windPower,
+	})
+end
+
+return WindShake
+</file>
+
+<file path="src/services/WindService/WindShakeModule/Settings.luau">
+local Settings = {}
+
+local SettingTypes = {
+	WindPower = "number",
+	WindSpeed = "number",
+	WindDirection = "Vector3",
+	PivotOffset = "CFrame",
+}
+
+function Settings.new(object: BasePart | Bone | ModuleScript)
+	local objectSettings = {}
+
+	-- Initial settings
+	local WindPower = object:GetAttribute("WindPower")
+	local WindSpeed = object:GetAttribute("WindSpeed")
+	local WindDirection = object:GetAttribute("WindDirection")
+
+	objectSettings.WindPower = if typeof(WindPower) == SettingTypes.WindPower then WindPower else nil
+	objectSettings.WindSpeed = if typeof(WindSpeed) == SettingTypes.WindSpeed then WindSpeed else nil
+	objectSettings.WindDirection = if typeof(WindDirection) == SettingTypes.WindDirection
+		then (if WindDirection.Magnitude > 0 then WindDirection.Unit else Vector3.zero)
+		else nil
+	objectSettings.PivotOffset = if object:IsA("BasePart") then object.PivotOffset else nil
+	objectSettings.PivotOffsetInverse = if typeof(objectSettings.PivotOffset) == "CFrame"
+		then objectSettings.PivotOffset:Inverse()
+		else nil
+
+	-- Update settings on event
+
+	local PowerConnection = object:GetAttributeChangedSignal("WindPower"):Connect(function()
+		WindPower = object:GetAttribute("WindPower")
+		objectSettings.WindPower = if typeof(WindPower) == SettingTypes.WindPower then WindPower else nil
+	end)
+
+	local SpeedConnection = object:GetAttributeChangedSignal("WindSpeed"):Connect(function()
+		WindSpeed = object:GetAttribute("WindSpeed")
+		objectSettings.WindSpeed = if typeof(WindSpeed) == SettingTypes.WindSpeed then WindSpeed else nil
+	end)
+
+	local DirectionConnection = object:GetAttributeChangedSignal("WindDirection"):Connect(function()
+		WindDirection = object:GetAttribute("WindDirection")
+		objectSettings.WindDirection = if typeof(WindDirection) == SettingTypes.WindDirection
+			then (if WindDirection.Magnitude > 0 then WindDirection.Unit else Vector3.zero)
+			else nil
+	end)
+
+	local PivotConnection
+	if object:IsA("BasePart") then
+		PivotConnection = object:GetPropertyChangedSignal("PivotOffset"):Connect(function()
+			objectSettings.PivotOffset = object.PivotOffset
+			objectSettings.PivotOffsetInverse = objectSettings.PivotOffset:Inverse()
+		end)
+	end
+
+	-- Cleanup function for when shake is removed or object is unloaded
+
+	function objectSettings:Destroy()
+		PowerConnection:Disconnect()
+		SpeedConnection:Disconnect()
+		DirectionConnection:Disconnect()
+		if PivotConnection then
+			PivotConnection:Disconnect()
+		end
+
+		table.clear(objectSettings)
+	end
+
+	return objectSettings
+end
+
+return Settings
+</file>
+
+<file path="src/services/WindService/WindShakeModule/VectorMap.luau">
+local VectorMap = {}
+VectorMap.__index = VectorMap
+
+function VectorMap.new(voxelSize: number?)
+	return setmetatable({
+		_voxelSize = voxelSize or 50,
+		_voxels = {},
+	}, VectorMap)
+end
+
+function VectorMap:_debugDrawVoxel(voxelKey: Vector3)
+	local box = Instance.new("Part")
+	box.Name = tostring(voxelKey)
+	box.Anchored = true
+	box.CanCollide = false
+	box.Transparency = 1
+	box.Size = Vector3.one * self._voxelSize
+	box.Position = (voxelKey * self._voxelSize) + (Vector3.one * (self._voxelSize / 2))
+	box.Parent = workspace
+
+	local selection = Instance.new("SelectionBox")
+	selection.Color3 = Color3.new(0, 0, 1)
+	selection.Adornee = box
+	selection.Parent = box
+
+	task.delay(1 / 30, box.Destroy, box)
+end
+
+function VectorMap:AddObject(position: Vector3, object: any)
+	local className = object.ClassName
+
+	local voxelSize = self._voxelSize
+	local voxelKey = Vector3.new(
+		math.floor(position.X / voxelSize),
+		math.floor(position.Y / voxelSize),
+		math.floor(position.Z / voxelSize)
+	)
+
+	local voxel = self._voxels[voxelKey]
+
+	if voxel == nil then
+		self._voxels[voxelKey] = {
+			[className] = { object },
+		}
+	elseif voxel[className] == nil then
+		voxel[className] = { object }
+	else
+		table.insert(voxel[className], object)
+	end
+
+	return voxelKey
+end
+
+function VectorMap:RemoveObject(voxelKey: Vector3, object: any)
+	local voxel = self._voxels[voxelKey]
+
+	if voxel == nil then
+		return
+	end
+
+	local className = object.ClassName
+	if voxel[className] == nil then
+		return
+	end
+
+	local classBucket = voxel[className]
+	for index, storedObject in classBucket do
+		if storedObject == object then
+			-- Swap remove to avoid shifting
+			local n = #classBucket
+			classBucket[index] = classBucket[n]
+			classBucket[n] = nil
+			break
+		end
+	end
+
+	-- Remove empty class bucket
+	if #classBucket == 0 then
+		voxel[className] = nil
+
+		-- Remove empty voxel
+		if next(voxel) == nil then
+			self._voxels[voxelKey] = nil
+		end
+	end
+end
+
+function VectorMap:GetVoxel(voxelKey: Vector3)
+	return self._voxels[voxelKey]
+end
+
+function VectorMap:ForEachObjectInRegion(top: Vector3, bottom: Vector3, callback: (string, any) -> ())
+	local voxelSize = self._voxelSize
+	local xMin, yMin, zMin = math.min(bottom.X, top.X), math.min(bottom.Y, top.Y), math.min(bottom.Z, top.Z)
+	local xMax, yMax, zMax = math.max(bottom.X, top.X), math.max(bottom.Y, top.Y), math.max(bottom.Z, top.Z)
+
+	for x = math.floor(xMin / voxelSize), math.floor(xMax / voxelSize) do
+		for z = math.floor(zMin / voxelSize), math.floor(zMax / voxelSize) do
+			for y = math.floor(yMin / voxelSize), math.floor(yMax / voxelSize) do
+				local voxel = self._voxels[Vector3.new(x, y, z)]
+				if not voxel then
+					continue
+				end
+
+				for className, objects in voxel do
+					for _, object in objects do
+						callback(className, object)
+					end
+				end
+			end
+		end
+	end
+end
+
+function VectorMap:ForEachObjectInView(camera: Camera, distance: number, callback: (string, any) -> ())
+	local voxelSize = self._voxelSize
+	local cameraCFrame = camera.CFrame
+	local cameraPos = cameraCFrame.Position
+	local rightVec, upVec = cameraCFrame.RightVector, cameraCFrame.UpVector
+
+	local distance2 = distance / 2
+	local farPlaneHeight2 = math.tan(math.rad((camera.FieldOfView + 5) / 2)) * distance
+	local farPlaneWidth2 = farPlaneHeight2 * (camera.ViewportSize.X / camera.ViewportSize.Y)
+	local farPlaneCFrame = cameraCFrame * CFrame.new(0, 0, -distance)
+	local farPlaneTopLeft = farPlaneCFrame * Vector3.new(-farPlaneWidth2, farPlaneHeight2, 0)
+	local farPlaneTopRight = farPlaneCFrame * Vector3.new(farPlaneWidth2, farPlaneHeight2, 0)
+	local farPlaneBottomLeft = farPlaneCFrame * Vector3.new(-farPlaneWidth2, -farPlaneHeight2, 0)
+	local farPlaneBottomRight = farPlaneCFrame * Vector3.new(farPlaneWidth2, -farPlaneHeight2, 0)
+
+	local frustumCFrameInverse = (cameraCFrame * CFrame.new(0, 0, -distance2)):Inverse()
+
+	local rightNormal = upVec:Cross(farPlaneBottomRight - cameraPos).Unit
+	local leftNormal = upVec:Cross(farPlaneBottomLeft - cameraPos).Unit
+	local topNormal = rightVec:Cross(cameraPos - farPlaneTopRight).Unit
+	local bottomNormal = rightVec:Cross(cameraPos - farPlaneBottomRight).Unit
+
+	local minBound =
+		cameraPos:Min(farPlaneTopLeft):Min(farPlaneTopRight):Min(farPlaneBottomLeft):Min(farPlaneBottomRight)
+	local maxBound =
+		cameraPos:Max(farPlaneTopLeft):Max(farPlaneTopRight):Max(farPlaneBottomLeft):Max(farPlaneBottomRight)
+
+	minBound = Vector3.new(
+		math.floor(minBound.X / voxelSize),
+		math.floor(minBound.Y / voxelSize),
+		math.floor(minBound.Z / voxelSize)
+	)
+	maxBound = Vector3.new(
+		math.floor(maxBound.X / voxelSize),
+		math.floor(maxBound.Y / voxelSize),
+		math.floor(maxBound.Z / voxelSize)
+	)
+
+	local function isPointInView(point: Vector3): boolean
+		-- Check if point lies outside frustum OBB
+		local relativeToOBB = frustumCFrameInverse * point
+		if
+			relativeToOBB.X > farPlaneWidth2
+			or relativeToOBB.X < -farPlaneWidth2
+			or relativeToOBB.Y > farPlaneHeight2
+			or relativeToOBB.Y < -farPlaneHeight2
+			or relativeToOBB.Z > distance2
+			or relativeToOBB.Z < -distance2
+		then
+			return false
+		end
+
+		-- Check if point lies outside a frustum plane
+		local lookToCell = point - cameraPos
+		if
+			rightNormal:Dot(lookToCell) < 0
+			or leftNormal:Dot(lookToCell) > 0
+			or topNormal:Dot(lookToCell) < 0
+			or bottomNormal:Dot(lookToCell) > 0
+		then
+			return false
+		end
+
+		return true
+	end
+
+	for x = minBound.X, maxBound.X do
+		local xMin = x * voxelSize
+		local xMax = xMin + voxelSize
+		local xPos = math.clamp(farPlaneCFrame.X, xMin, xMax)
+
+		for y = minBound.Y, maxBound.Y do
+			local yMin = y * voxelSize
+			local yMax = yMin + voxelSize
+			local yPos = math.clamp(farPlaneCFrame.Y, yMin, yMax)
+
+			for z = minBound.Z, maxBound.Z do
+				local zMin = z * voxelSize
+				local zMax = zMin + voxelSize
+
+				local voxelNearestPoint = Vector3.new(xPos, yPos, math.clamp(farPlaneCFrame.Z, zMin, zMax))
+				if isPointInView(voxelNearestPoint) then
+					-- Found the first in frustum, now binary search for the last
+					local entry, exit = z, minBound.Z - 1
+					local left = z
+					local right = maxBound.Z
+
+					while left <= right do
+						local mid = math.floor((left + right) / 2)
+						local midPos = Vector3.new(
+							xPos,
+							yPos,
+							math.clamp(farPlaneCFrame.Z, mid * voxelSize, mid * voxelSize + voxelSize)
+						)
+
+						if isPointInView(midPos) then
+							exit = mid
+							left = mid + 1
+						else
+							right = mid - 1
+						end
+					end
+
+					for fillZ = entry, exit do
+						local voxel = self._voxels[Vector3.new(x, y, fillZ)]
+						if voxel then
+							for className, objects in voxel do
+								for _, object in objects do
+									callback(className, object)
+								end
+							end
+						end
+					end
+
+					break
+				end
+			end
+		end
+	end
+end
+
+function VectorMap:ClearAll()
+	self._voxels = {}
+end
+
+return VectorMap
+</file>
+
+<file path="src/services/CameraProxyService/CameraProxyContainer.luau">
+local CameraProxyContainer = {
+	ContainerName = "CameraProxies",
+}
+
+function CameraProxyContainer:CreateContainer(parent)
+	local folder = Instance.new("Folder")
+	folder.Name = self.ContainerName
+	folder.Parent = parent or workspace
+	return folder
+end
+
+function CameraProxyContainer:GetContainer()
+	local container = workspace:FindFirstChild(self.ContainerName)
+	if not container then
+		container = self:CreateContainer(workspace)
+	end
+	return container
+end
+
+return CameraProxyContainer
+</file>
+
+<file path="src/services/CameraProxyService/CameraProxyFactory.luau">
+local ContentProvider = game:GetService("ContentProvider")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CameraProxyContainer = require(script.Parent.CameraProxyContainer)
+local CameraProxyFactory = {}
+
+-- * Public
+function CameraProxyFactory:Create(parent: Instance?): Model?
+	local cameraProxyTemplate =
+		ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Cameras"):WaitForChild("CameraProxy")
+
+	ContentProvider:PreloadAsync({ cameraProxyTemplate })
+
+	local cameraProxy = cameraProxyTemplate:Clone()
+	cameraProxy.Parent = parent or CameraProxyContainer:GetContainer()
+
+	return cameraProxy
+end
+
+return CameraProxyFactory
+</file>
+
+<file path="src/services/CameraProxyService/Client.luau">
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CameraProxyFactory = require(script.Parent.CameraProxyFactory)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local CframeBuffer = require(ReplicatedStorage.Shared.Utils.CframeBuffer)
+local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+
+local CameraProxyController = Knit.CreateController({
+	Name = "CameraProxyController",
+
+	_targets = {}, -- [userId] = target CFrame
+	_cameras = {}, -- [userId] = Model
+	_smoothing = 0.15, -- interpolation strength
+})
+
+-- * Constant
+local SCOPENAME = "CameraProxyController"
+local UPDATE_INTERVAL = 1 / 30 -- 30 hz
+local RENDER_NAME = "CameraProxyController"
+local RENDER_PRIORITY = Enum.RenderPriority.Last.Value
+
+-- * Public
+function CameraProxyController:CreateCamera(userId: number)
+	if self._cameras[userId] then
+		return self._cameras[userId]
+	end
+
+	local cameraModel = CameraProxyFactory:Create()
+	self._cameras[userId] = cameraModel
+
+	return cameraModel
+end
+
+function CameraProxyController:UpdateCameras(dt)
+	for userId, target in pairs(self._targets) do
+		local camera = self._cameras[userId]
+		if camera then
+			local current = camera:GetPivot()
+			local alpha = 1 - math.exp(-dt * 12) -- framerate independent smoothing
+			local new = current:Lerp(target, alpha)
+			camera:PivotTo(new)
+		end
+	end
+	table.clear(self._targets)
+end
+
+function CameraProxyController:GetCamera(userId: number)
+	return self._cameras[userId]
+end
+
+-- * Private
+function CameraProxyController:_onCamerasUpdated(snapshot)
+	for userId, buffer in pairs(snapshot) do
+		local cf = CframeBuffer.Deserialize(buffer)
+		self._targets[userId] = cf
+	end
+end
+
+function CameraProxyController:_onCameraAdded(userId: number)
+	self:CreateCamera(userId)
+end
+
+function CameraProxyController:_onCameraRemoved(userId: number)
+	local cam = self._cameras[userId]
+	if cam then
+		cam:Destroy()
+	end
+
+	self._cameras[userId] = nil
+	self._targets[userId] = nil
+end
+
+function CameraProxyController:_renderStep(dt)
+	self:UpdateCameras(dt)
+end
+
+-- Serialization
+function CameraProxyController:_serializeCurrentCframe()
+	local camera = workspace.CurrentCamera
+	return CframeBuffer.Serialize(camera.CFrame)
+end
+
+-- My camera setup
+function CameraProxyController:_setupMyCamera()
+	local userId = game.Players.LocalPlayer.UserId
+	local myCamera = self._cameras[userId]
+
+	if not myCamera then
+		return
+	end
+
+	for _, descendant in ipairs(myCamera:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.CanQuery = false
+			descendant.Transparency = 1
+		end
+	end
+end
+
+-- * Knit
+function CameraProxyController:KnitStart()
+	local service = Knit.GetService("CameraProxyService")
+
+	service
+		:GetCameras()
+		:andThen(function(res: { number })
+			for _, userId in ipairs(res) do
+				self:_onCameraAdded(userId)
+			end
+		end)
+		:catch(function(err)
+			Logger.error(SCOPENAME, err)
+		end)
+
+	service.CamerasUpdated:Connect(function(snapshot)
+		self:_onCamerasUpdated(snapshot)
+	end)
+
+	service.CameraAdded:Connect(function(userId)
+		self:_onCameraAdded(userId)
+		if userId == game.Players.LocalPlayer.UserId then
+			self:_setupMyCamera()
+		end
+	end)
+
+	service.CameraRemoved:Connect(function(userId)
+		self:_onCameraRemoved(userId)
+	end)
+
+	RunService:BindToRenderStep(RENDER_NAME, RENDER_PRIORITY, function(dt: number)
+		self:_renderStep(dt)
+		self._accumulator = self._accumulator and self._accumulator + dt or dt
+
+		if self._accumulator < UPDATE_INTERVAL then
+			return
+		end
+
+		local camera = workspace.CurrentCamera
+		local currentCfr = camera.CFrame
+
+		if currentCfr == self._lastCfr then
+			return
+		end
+
+		self._accumulator = 0
+		self._lastCfr = currentCfr
+
+		local buffer = self:_serializeCurrentCframe()
+		service:UpdateCamera(buffer):catch(function(err)
+			Logger.error(SCOPENAME, err)
+		end)
+	end)
+end
+
+return CameraProxyController
+</file>
+
+<file path="src/services/CameraProxyService/Server.luau">
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local OrderedCollections =
+	require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-collections@1.0.0"]["ordered-collections"])
+local CframeBuffer = require(ReplicatedStorage.Shared.Utils.CframeBuffer)
+local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+
+-- * Types
+export type Map<K, V> = OrderedCollections.Map<K, V>
+export type Set<T> = OrderedCollections.Set<T>
+
+-- * Service
+local CameraProxyService = Knit.CreateService({
+	Name = "CameraProxyService",
+	Client = {
+		CameraAdded = Knit.CreateSignal(),
+		CameraRemoved = Knit.CreateSignal(),
+		CamerasUpdated = Knit.CreateSignal(),
+	},
+	cameras = OrderedCollections.Set.new() :: Set<number>,
+	cframesBuffer = OrderedCollections.Map.new() :: Map<number, CFrame>,
+})
+
+-- * Constant
+local SCOPENAME = "CameraProxyService"
+local UPDATE_INTERVAL = 1 / 10 -- 1 / n = n hz
+
+-- * Client API
+function CameraProxyService.Client:GetCameras()
+	local snapshot = self.Server:_serializeCameras()
+	return snapshot
+end
+
+function CameraProxyService.Client:UpdateCamera(player: Player, cframeBuffer: buffer)
+	local cameraCframe = CframeBuffer.Deserialize(cframeBuffer)
+	CameraProxyService:UpdateCamera(player, cameraCframe)
+end
+
+-- * Public API
+-- Cframe Updater
+function CameraProxyService:UpdateCamera(player: Player, cameraCframe: CFrame)
+	if typeof(cameraCframe) ~= "CFrame" then
+		return
+	end
+	self.cframesBuffer:Set(player.UserId, cameraCframe)
+end
+
+function CameraProxyService:Render()
+	if self.cframesBuffer:Size() == 0 then
+		return
+	end
+
+	local snapshot = self:_serializeCframes()
+	self.Client.CamerasUpdated:FireAll(snapshot)
+end
+
+-- Proxy Spawner
+function CameraProxyService:Spawn(player: Player)
+	if self.cameras:Has(player.UserId) then
+		Logger.warn(SCOPENAME, "Camera already exists!")
+	end
+
+	self.cameras:PushBack(player.UserId)
+
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer == player then
+			continue
+		end
+		self.Client.CameraAdded:Fire(otherPlayer, player.UserId)
+	end
+end
+
+function CameraProxyService:Despawn(player: Player)
+	if not self.cameras:Has(player.UserId) then
+		return
+	end
+
+	self.cameras:Pop(player.UserId)
+	self.cframesBuffer:Remove(player.UserId)
+
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer == player then
+			continue
+		end
+		self.Client.CameraRemoved:Fire(otherPlayer, player.UserId)
+	end
+end
+
+-- * Private API
+function CameraProxyService:_serializeCameras(): { number }
+	local set = self.cameras :: Set<number>
+	return set:ToArray()
+end
+
+function CameraProxyService:_serializeCframes(): { [number]: CFrame }
+	local map = self.cframesBuffer :: Map<number, CFrame>
+	local packet = table.create(map:Size())
+
+	map:Each(function(userId: number, cframe: CFrame)
+		packet[userId] = CframeBuffer.Serialize(cframe)
+	end)
+
+	return packet
+end
+
+-- * Knit
+function CameraProxyService:KnitStart()
+	Players.PlayerAdded:Connect(function(player: Player)
+		self:Spawn(player)
+	end)
+	Players.PlayerRemoving:Connect(function(player: Player)
+		self:Despawn(player)
+	end)
+	RunService.Heartbeat:Connect(function(dt)
+		self._accumulator = self._accumulator and self._accumulator + dt or dt
+		if self._accumulator >= UPDATE_INTERVAL then
+			self._accumulator = 0
+			self:Render()
+		end
+	end)
+end
+
+return CameraProxyService
+</file>
+
+<file path="src/services/CameraService/CameraRemote.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ExternalCameraService = require(ReplicatedStorage.Shared.Services.CameraService.ExternalCameraService)
+
+local CameraRemote = {}
+
+function CameraRemote:Reset()
+	ExternalCameraService:SetCameraView("Default")
+end
+
+function CameraRemote:SetHost(part)
+	print(part:GetFullName())
+	ExternalCameraService:SetCameraHost(part)
+end
+
+function CameraRemote:Watch(part)
+	ExternalCameraService:SetCameraView("Orbital")
+	self:SetHost(part)
+end
+
+return CameraRemote
+</file>
+
+<file path="src/services/CharacterService/Client.luau">
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
+
+local Logger = Knit.CreateLogger("CharacterController")
+local CharacterController = Knit.CreateController({
+	Name = "CharacterController",
+	CharacterSpawned = Signal.new(),
+	CharacterDied = Signal.new(),
+})
+
+-- * Private
+function CharacterController:_onCharacterSpawn(character)
+	self.CharacterSpawned:Fire(character)
+end
+
+function CharacterController:_onCharacterDied()
+	self.CharacterDied:Fire()
+end
+
+-- * Public API
+function CharacterController:GetCharacter(): Model?
+	return Players.LocalPlayer.Character
+end
+
+-- * Knit
+function CharacterController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+function CharacterController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+
+	local CharacterService = Knit.GetService("CharacterService")
+
+	CharacterService.CharacterSpawned:Connect(function(character)
+		self:_onCharacterSpawn(character)
+	end)
+
+	CharacterService.CharacterDied:Connect(function()
+		self:_onCharacterDied()
+	end)
+
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return CharacterController
+</file>
+
+<file path="src/services/CharacterService/Server.luau">
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local Logger = require(ReplicatedStorage.Shared.Core.LoggerManager.Logger)
+local CharacterService = Knit.CreateService({
+	Name = "CharacterService",
+	Client = {
+		CharacterSpawned = Knit.CreateSignal(),
+		CharacterDied = Knit.CreateSignal(),
+	},
+})
+
+-- * Private API
+function CharacterService:_setupCharacter(player, character)
+	self.Client.CharacterSpawned:Fire(player, character)
+
+	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+	humanoid.Died:Connect(function()
+		self.Client.CharacterDied:Fire(player)
+		task.delay(3, function()
+			if player and player.Parent then
+				self:Spawn(player)
+			end
+		end)
+	end)
+end
+
+-- * Public API
+function CharacterService:Spawn(player: Player)
+	player:LoadCharacterAsync()
+end
+
+function CharacterService:Despawn(player)
+	if player.Character then
+		player.Character:Destroy()
+	end
+end
+
+-- * Knit
+function CharacterService:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function CharacterService:KnitStart()
+	Players.CharacterAutoLoads = false
+
+	Players.PlayerAdded:Connect(function(player: Player)
+		player.CharacterAdded:Connect(function(character)
+			self:_setupCharacter(player, character)
+		end)
+
+		--self:Spawn(player)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		self:Despawn(player)
+	end)
+end
+
+return CharacterService
+</file>
+
+<file path="src/services/GameStateService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameStates = require(script.Parent.GameStates)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local StateMachine = require(ReplicatedStorage.Packages.StateMachine)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+-- * Types
+export type State = GameStates.State
+
+-- * Constants
+local DEFAULT_STATE: State = GameStates.MainMenu
+
+-- * Controller
+local Logger = LoggerManager:CreateLogger("GameStateController")
+local GameStateController = Knit.CreateController({
+	Name = "GameStateController",
+})
+
+-- * Private
+function GameStateController:_registerStates()
+	for _, state in pairs(GameStates) do
+		self._machine:RegisterState(state)
+	end
+end
+
+-- * Public
+function GameStateController:ChangeState(state: State)
+	return self._machine:ChangeState(state)
+end
+
+function GameStateController:StartGame()
+	return self._machine:ChangeState(GameStates.Gameplay)
+end
+
+function GameStateController:ReturnToMenu()
+	return self._machine:ChangeState(GameStates.MainMenu)
+end
+
+-- * Knit
+function GameStateController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	self._machine = StateMachine.new()
+	self:_registerStates()
+
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function GameStateController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	self:ChangeState(DEFAULT_STATE)
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return GameStateController
+</file>
+
+<file path="src/services/GameStateService/GameStates.luau">
+export type State = "MainMenu" | "Gameplay" | "Pause" | "EndGame"
+local States = {
+	MainMenu = "MainMenu",
+	Gameplay = "Gameplay",
+	Pause = "Pause",
+	EndGame = "EndGame",
+}
+
+return States
+</file>
+
+<file path="src/services/GameStateService/Server.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local StateMachine = require(ReplicatedStorage.Packages.StateMachine)
+local GameStateService = Knit.CreateService({
+	Name = "GameStateService",
+	Client = {},
+
+	_machine = StateMachine.new(),
+})
+
+-- * Knit
+function GameStateService:KnitStart() end
+
+-- * Client
+
+-- * Private
+
+-- * Public API
+
+return GameStateService
+</file>
+
+<file path="src/services/LightingService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LightingManager = require(script.Parent.LightingManager)
+local LightingPresets = require(script.Parent.LightingPresets)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local Logger = LoggerManager:CreateLogger("LightingController")
+local LightingController = Knit.CreateController({
+	Name = "LightingController",
+})
+
+-- * Pulbic API
+function LightingController:SetPreset(name: string)
+	local preset = LightingPresets[name]
+	if not preset then
+		Logger:Warn(`Preset "{name}" not found!`)
+		return
+	end
+	LightingManager:Apply(preset)
+end
+
+-- * Knit API
+function LightingController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function LightingController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	LightingManager:Apply(LightingPresets.Default)
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return LightingController
+</file>
+
+<file path="src/services/LightingService/LightingComposer.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LightingTypes = require(script.Parent.LightingTypes)
+local LightingPresets = require(ReplicatedStorage.Shared.Services.LightingService.LightingPresets)
+
+local Composer = {}
+
+-- * Types
+export type Config = LightingTypes.LightingConfig
+export type Props = LightingTypes.LightingProps
+
+-- * Constants
+local Defaults = LightingPresets.Default
+
+-- * Private
+local function MergeInto(target, source)
+	for key, value in source do
+		if target[key] ~= nil then
+			target[key] = value
+		else
+			warn("Unknown lighting key:", key)
+		end
+	end
+end
+
+-- * Public
+function Composer.Compose(...: Props): Config
+	local result = table.clone(Defaults)
+
+	for i = 1, select("#", ...) do
+		local layer = select(i, ...)
+		if layer then
+			MergeInto(result, layer)
+		end
+	end
+
+	return result
+end
+
+return Composer
+</file>
+
+<file path="src/services/LightingService/LightingManager.luau">
+local Lighting = game:GetService("Lighting")
+local LightingTypes = require(script.Parent.LightingTypes)
+
+-- * Types
+export type LightingConfig = LightingTypes.LightingConfig
+export type LightingProps = LightingTypes.LightingProps
+
+-- * Constants
+local DEFAULTCONFIG: LightingConfig = {
+	Ambient = Color3.fromRGB(70, 70, 70),
+	Brightness = 3,
+	ColorShift_Bottom = Color3.fromRGB(0, 0, 0),
+	ColorShift_Top = Color3.fromRGB(0, 0, 0),
+	EnvironmentDiffuseScale = 1,
+	EnvironmentSpecularScale = 1,
+	GlobalShadows = false,
+	OutdoorAmbient = Color3.fromRGB(70, 70, 70),
+	ShadowSoftness = 0.03,
+	ClockTime = 12,
+	GeographicLatitude = 0,
+	ExposureCompensation = 0,
+	FogColor = Color3.fromRGB(70, 70, 70),
+	FogEnd = 1000,
+	FogStart = 0,
+
+	Atmosphere = true,
+	AtmosphereDensity = 0.3,
+	AtmosphereOffset = 0.25,
+	AtmosphereColor = Color3.fromRGB(70, 70, 70),
+	AtmosphereDecay = Color3.fromRGB(70, 70, 70),
+	AtmosphereGlare = 0,
+	AtmosphereHaze = 0,
+
+	Sky = true,
+	SkyCelestialBodiesShown = true,
+	SkyMoonAngularSize = 11,
+	SkyMoonTextureId = "rbxassetid://6444320592",
+	SkySkyboxBk = "rbxassetid://6444884337",
+	SkySkyboxDn = "rbxassetid://6444884785",
+	SkySkyboxFt = "rbxassetid://6444884337",
+	SkySkyboxLf = "rbxassetid://6444884337",
+	SkySkyboxRt = "rbxassetid://6444884337",
+	SkySkyboxUp = "rbxassetid://6412503613",
+	SkySkyboxOrientation = Vector3.new(0, 0, 0),
+	SkyStarCount = 3000,
+	SkySunAngularSize = 11,
+	SkySunTextureId = "rbxassetid://6196665106",
+
+	Bloom = true,
+	BloomIntensity = 1,
+	BloomSize = 24,
+	BloomThreshold = 2,
+
+	Blur = false,
+	BlurSize = 2,
+
+	ColorCorrection = false,
+	ColorCorrectionBrightness = 0,
+	ColorCorrectionContrast = 0,
+	ColorCorrectionSaturation = 0,
+	ColorCorrectionTintColor = Color3.fromRGB(255, 255, 255),
+
+	ColorGrading = false,
+	ColorGradingTonemapperPreset = Enum.TonemapperPreset.Default,
+
+	DepthOfField = false,
+	DepthOfFieldFarIntensity = 0.1,
+	DepthOfFieldFocusDistance = 0.05,
+	DepthOfFieldInFocusRadius = 30,
+	DepthOfFieldNearIntensity = 0.75,
+
+	SunRays = false,
+	SunRaysIntensity = 0.01,
+	SunRaysSpread = 0.1,
+}
+
+local Lightings = {}
+Lightings.__index = Lightings
+
+function Lightings.new()
+	local self = setmetatable({
+		atmosphere = nil :: Atmosphere?,
+		sky = nil :: Sky?,
+		bloom = nil :: BloomEffect?,
+		colorCorrection = nil :: ColorCorrectionEffect?,
+		colorGrading = nil :: ColorGradingEffect?,
+		blur = nil :: BlurEffect?,
+		depthOfField = nil :: DepthOfFieldEffect?,
+		sunRays = nil :: SunRaysEffect?,
+	}, Lightings)
+
+	self:Apply(DEFAULTCONFIG)
+	return self
+end
+
+function Lightings:Apply(props: LightingProps)
+	local config = table.clone(DEFAULTCONFIG) :: LightingConfig
+	for key, value in pairs(props) do
+		config[key] = value
+	end
+
+	Lighting.Ambient = config.Ambient
+	Lighting.Brightness = config.Brightness
+	Lighting.ColorShift_Bottom = config.ColorShift_Bottom
+	Lighting.ColorShift_Top = config.ColorShift_Top
+	Lighting.EnvironmentDiffuseScale = config.EnvironmentDiffuseScale
+	Lighting.EnvironmentSpecularScale = config.EnvironmentSpecularScale
+	Lighting.GlobalShadows = config.GlobalShadows
+	Lighting.OutdoorAmbient = config.OutdoorAmbient
+	Lighting.ShadowSoftness = config.ShadowSoftness
+	Lighting.ClockTime = config.ClockTime
+	Lighting.GeographicLatitude = config.GeographicLatitude
+	Lighting.ExposureCompensation = config.ExposureCompensation
+	Lighting.FogColor = config.FogColor
+	Lighting.FogEnd = config.FogEnd
+	Lighting.FogStart = config.FogStart
+
+	self.atmosphere = self.atmosphere or Lighting:FindFirstChildWhichIsA("Atmosphere") or Instance.new("Atmosphere")
+	local atmosphere: Atmosphere = self.atmosphere
+	atmosphere.Parent = config.Atmosphere and Lighting or nil
+	atmosphere.Density = config.AtmosphereDensity
+	atmosphere.Offset = config.AtmosphereOffset
+	atmosphere.Color = config.AtmosphereColor
+	atmosphere.Decay = config.AtmosphereDecay
+	atmosphere.Glare = config.AtmosphereGlare
+	atmosphere.Haze = config.AtmosphereHaze
+
+	self.sky = self.sky or Lighting:FindFirstChildWhichIsA("Sky") or Instance.new("Sky")
+	local sky: Sky = self.sky
+	sky.Parent = config.Sky and Lighting or nil
+	sky.CelestialBodiesShown = config.SkyCelestialBodiesShown
+	sky.SkyboxBk = config.SkySkyboxBk
+	sky.SkyboxDn = config.SkySkyboxDn
+	sky.SkyboxFt = config.SkySkyboxFt
+	sky.SkyboxLf = config.SkySkyboxLf
+	sky.SkyboxRt = config.SkySkyboxRt
+	sky.SkyboxUp = config.SkySkyboxUp
+	sky.SkyboxOrientation = config.SkySkyboxOrientation
+	sky.StarCount = config.SkyStarCount
+	sky.MoonAngularSize = config.SkyMoonAngularSize
+	sky.MoonTextureId = config.SkyMoonTextureId
+	sky.SunAngularSize = config.SkySunAngularSize
+	sky.SunTextureId = config.SkySunTextureId
+
+	self.bloom = self.bloom or Lighting:FindFirstChildWhichIsA("BloomEffect") or Instance.new("BloomEffect")
+	local bloom: BloomEffect = self.bloom
+	bloom.Parent = Lighting
+	bloom.Enabled = config.Bloom
+	bloom.Intensity = config.BloomIntensity
+	bloom.Size = config.BloomSize
+	bloom.Threshold = config.BloomThreshold
+
+	self.colorCorrection = self.colorCorrection
+		or Lighting:FindFirstChildWhichIsA("ColorCorrectionEffect")
+		or Instance.new("ColorCorrectionEffect")
+	local colorCorrection: ColorCorrectionEffect = self.colorCorrection
+	colorCorrection.Parent = Lighting
+	colorCorrection.Enabled = config.ColorCorrection
+	colorCorrection.Brightness = config.ColorCorrectionBrightness
+	colorCorrection.Contrast = config.ColorCorrectionContrast
+	colorCorrection.Saturation = config.ColorCorrectionSaturation
+	colorCorrection.TintColor = config.ColorCorrectionTintColor
+
+	self.colorGrading = self.colorGrading
+		or Lighting:FindFirstChildWhichIsA("ColorGradingEffect")
+		or Instance.new("ColorGradingEffect")
+	local colorGrading: ColorGradingEffect = self.colorGrading
+	colorGrading.Parent = Lighting
+	colorGrading.Enabled = config.ColorGrading
+	colorGrading.TonemapperPreset = config.ColorGradingTonemapperPreset
+
+	self.blur = self.blur or Lighting:FindFirstChildWhichIsA("BlurEffect") or Instance.new("BlurEffect")
+	local blur: BlurEffect = self.blur
+	blur.Parent = Lighting
+	blur.Enabled = config.Blur
+	blur.Size = config.BlurSize
+
+	self.depthOfField = self.depthOfField
+		or Lighting:FindFirstChildWhichIsA("DepthOfFieldEffect")
+		or Instance.new("DepthOfFieldEffect")
+	local depthOfField: DepthOfFieldEffect = self.depthOfField
+	depthOfField.Parent = Lighting
+	depthOfField.Enabled = config.DepthOfField
+	depthOfField.FarIntensity = config.DepthOfFieldFarIntensity
+	depthOfField.FocusDistance = config.DepthOfFieldFocusDistance
+	depthOfField.InFocusRadius = config.DepthOfFieldInFocusRadius
+	depthOfField.NearIntensity = config.DepthOfFieldNearIntensity
+
+	self.sunRays = self.sunRays or Lighting:FindFirstChildWhichIsA("SunRaysEffect") or Instance.new("SunRaysEffect")
+	local sunRays: SunRaysEffect = self.sunRays
+	sunRays.Parent = Lighting
+	sunRays.Enabled = config.SunRays
+	sunRays.Intensity = config.SunRaysIntensity
+	sunRays.Spread = config.SunRaysSpread
+end
+
+return Lightings.new()
+</file>
+
+<file path="src/services/LightingService/LightingPresets.luau">
+local LightingTypes = require(script.Parent.LightingTypes)
+
+-- * Types
+export type Props = LightingTypes.LightingProps
+export type Config = LightingTypes.LightingConfig
+
+-- * Presets
+local Presets = {
+	Default = {
+		-- Lighting core
+		Ambient = Color3.fromRGB(200, 160, 225),
+		Brightness = 2.3,
+		ColorShift_Bottom = Color3.fromRGB(0, 0, 0),
+		ColorShift_Top = Color3.fromRGB(240, 240, 130),
+		EnvironmentDiffuseScale = 0.3,
+		EnvironmentSpecularScale = 0.25,
+		GlobalShadows = true,
+		OutdoorAmbient = Color3.fromRGB(70, 70, 150),
+		ShadowSoftness = 0.03,
+		ClockTime = 11,
+		GeographicLatitude = 50,
+		ExposureCompensation = 0,
+
+		FogColor = Color3.fromRGB(70, 70, 70),
+		FogEnd = 1000,
+		FogStart = 0,
+
+		-- Atmosphere
+		Atmosphere = true,
+		AtmosphereDensity = 0.35,
+		AtmosphereOffset = 1,
+		AtmosphereColor = Color3.fromRGB(200, 200, 255),
+		AtmosphereDecay = Color3.fromRGB(200, 200, 255),
+		AtmosphereGlare = 1.5,
+		AtmosphereHaze = 10,
+
+		-- Sky
+		Sky = true,
+		SkyCelestialBodiesShown = true,
+		SkyMoonAngularSize = 11,
+		SkyMoonTextureId = "rbxassetid://6444320592",
+		SkySkyboxBk = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxDn = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxFt = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxLf = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxRt = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxUp = "http://www.roblox.com/asset/?ID=1361097",
+		SkySkyboxOrientation = Vector3.new(0, 0, 0),
+		SkyStarCount = 3000,
+		SkySunAngularSize = 60,
+		SkySunTextureId = "rbxasset://sky/sun.jpg",
+
+		-- Bloom
+		Bloom = true,
+		BloomIntensity = 1,
+		BloomSize = 50,
+		BloomThreshold = 2,
+
+		-- Blur
+		Blur = true,
+		BlurSize = 1,
+
+		-- ColorCorrection
+		ColorCorrection = true,
+		ColorCorrectionBrightness = 0.05,
+		ColorCorrectionContrast = 0.2,
+		ColorCorrectionSaturation = 0.2,
+		ColorCorrectionTintColor = Color3.fromRGB(232, 226, 255),
+
+		-- ColorGrading (missing before)
+		ColorGrading = false,
+		ColorGradingTonemapperPreset = Enum.TonemapperPreset.Default,
+
+		-- DepthOfField
+		DepthOfField = true,
+		DepthOfFieldFarIntensity = 1,
+		DepthOfFieldFocusDistance = 20,
+		DepthOfFieldInFocusRadius = 10,
+		DepthOfFieldNearIntensity = 0.4,
+
+		-- SunRays
+		SunRays = true,
+		SunRaysIntensity = 1,
+		SunRaysSpread = 1,
+	} :: LightingTypes.LightingConfig,
+}
+
+return Presets
+</file>
+
+<file path="src/services/LightingService/LightingSemantic.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LightingTypes = require(ReplicatedStorage.Shared.Services.LightingService.LightingTypes)
+
+-- * Types
+type Props = LightingTypes.LightingProps
+
+-- * Constants
+local Semantic: { [string]: { [string]: Props } } = {}
+
+Semantic.TimeOfDay = {
+	Morning = {
+		ClockTime = 8,
+		Brightness = 2.5,
+	},
+
+	Noon = {
+		ClockTime = 12,
+		Brightness = 3,
+	},
+
+	Night = {
+		ClockTime = 22,
+		Brightness = 1.5,
+	},
+}
+
+Semantic.Fog = {
+	Normal = {
+		FogEnd = 150,
+		AtmosphereDensity = 0.6,
+	},
+
+	Dense = {
+		FogEnd = 100,
+		AtmosphereDensity = 0.8,
+	},
+}
+
+Semantic.Mood = {
+	Warm = {
+		ColorCorrection = true,
+		ColorCorrectionTintColor = Color3.fromRGB(255, 220, 180),
+	},
+
+	Cold = {
+		ColorCorrection = true,
+		ColorCorrectionTintColor = Color3.fromRGB(180, 220, 255),
+	},
+}
+
+Semantic.Effect = {
+	Foggy = {
+		FogEnd = 150,
+		AtmosphereDensity = 0.6,
+	},
+
+	Dream = {
+		Bloom = true,
+		BloomIntensity = 2,
+		Blur = true,
+		BlurSize = 4,
+	},
+
+	Rain = {
+		ExposureCompensation = -0.5,
+		AtmosphereDensity = 0.5,
+	},
+}
+
+return Semantic
+</file>
+
+<file path="src/services/LightingService/LightingTypes.luau">
+export type LightingConfig = {
+	-- * Lighting
+	Ambient: Color3,
+	Brightness: number,
+	ColorShift_Bottom: Color3,
+	ColorShift_Top: Color3,
+	EnvironmentDiffuseScale: number,
+	EnvironmentSpecularScale: number,
+	GlobalShadows: boolean,
+	OutdoorAmbient: Color3,
+	ShadowSoftness: number,
+	ClockTime: number,
+	GeographicLatitude: number,
+	ExposureCompensation: number,
+	FogColor: Color3,
+	FogEnd: number,
+	FogStart: number,
+
+	-- * Atmosphere
+	Atmosphere: boolean,
+
+	AtmosphereDensity: number,
+	AtmosphereOffset: number,
+	AtmosphereColor: Color3,
+	AtmosphereDecay: Color3,
+	AtmosphereGlare: number,
+	AtmosphereHaze: number,
+
+	-- * Sky
+	Sky: boolean,
+	SkyCelestialBodiesShown: boolean,
+	SkySkyboxBk: string,
+	SkySkyboxDn: string,
+	SkySkyboxFt: string,
+	SkySkyboxLf: string,
+	SkySkyboxRt: string,
+	SkySkyboxUp: string,
+	SkySkyboxOrientation: Vector3,
+	SkyStarCount: number,
+	SkyMoonAngularSize: number,
+	SkyMoonTextureId: string,
+	SkySunAngularSize: number,
+	SkySunTextureId: string,
+
+	-- * Bloom
+	Bloom: boolean,
+	BloomIntensity: number,
+	BloomSize: number,
+	BloomThreshold: number,
+
+	-- * ColorCorrection
+	ColorCorrection: boolean,
+	ColorCorrectionBrightness: number,
+	ColorCorrectionContrast: number,
+	ColorCorrectionSaturation: number,
+	ColorCorrectionTintColor: Color3,
+
+	-- * ColorGrading
+	ColorGrading: boolean,
+	ColorGradingTonemapperPreset: Enum.TonemapperPreset,
+
+	-- * Blur
+	Blur: boolean,
+	BlurSize: number,
+
+	-- * DepthOfField
+	DepthOfField: boolean,
+	DepthOfFieldFocusDistance: number,
+	DepthOfFieldInFocusRadius: number,
+	DepthOfFieldFarIntensity: number,
+	DepthOfFieldNearIntensity: number,
+
+	-- * SunRays
+	SunRays: boolean,
+	SunRaysIntensity: number,
+	SunRaysSpread: number,
+}
+
+export type LightingProps = {
+	-- * Lighting
+	Ambient: Color3?,
+	Brightness: number?,
+	ColorShift_Bottom: Color3?,
+	ColorShift_Top: Color3?,
+	EnvironmentDiffuseScale: number?,
+	EnvironmentSpecularScale: number?,
+	GlobalShadows: boolean?,
+	OutdoorAmbient: Color3?,
+	ShadowSoftness: number?,
+	ClockTime: number?,
+	GeographicLatitude: number?,
+	ExposureCompensation: number?,
+	FogColor: Color3?,
+	FogEnd: number?,
+	FogStart: number?,
+
+	-- * Atmosphere
+	Atmosphere: boolean?,
+	AtmosphereDensity: number?,
+	AtmosphereOffset: number?,
+	AtmosphereColor: Color3?,
+	AtmosphereDecay: Color3?,
+	AtmosphereGlare: number?,
+	AtmosphereHaze: number?,
+
+	-- * Sky
+	Sky: boolean?,
+	SkyCelestialBodiesShown: boolean?,
+	SkySkyboxBk: string?,
+	SkySkyboxDn: string?,
+	SkySkyboxFt: string?,
+	SkySkyboxLf: string?,
+	SkySkyboxRt: string?,
+	SkySkyboxUp: string?,
+	SkySkyboxOrientation: Vector3?,
+	SkyStarCount: number?,
+	SkyMoonAngularSize: number?,
+	SkyMoonTextureId: string?,
+	SkySunAngularSize: number?,
+	SkySunTextureId: string?,
+
+	-- * Bloom
+	Bloom: boolean?,
+	BloomIntensity: number?,
+	BloomSize: number?,
+	BloomThreshold: number?,
+
+	-- * ColorCorrection
+	ColorCorrection: boolean?,
+	ColorCorrectionBrightness: number?,
+	ColorCorrectionContrast: number?,
+	ColorCorrectionSaturation: number?,
+	ColorCorrectionTintColor: Color3?,
+
+	-- * ColorGrading
+	ColorGrading: boolean?,
+	ColorGradingTonemapperPreset: Enum.TonemapperPreset?,
+
+	-- * Blur
+	Blur: boolean?,
+	BlurSize: number?,
+
+	-- * DepthOfField
+	DepthOfField: boolean?,
+	DepthOfFieldFocusDistance: number?,
+	DepthOfFieldInFocusRadius: number?,
+	DepthOfFieldFarIntensity: number?,
+	DepthOfFieldNearIntensity: number?,
+
+	-- * SunRays
+	SunRays: boolean?,
+	SunRaysIntensity: number?,
+	SunRaysSpread: number?,
+}
+
+return {}
+</file>
+
+<file path="src/services/MapService/Client.luau">
+local ContentProvider = game:GetService("ContentProvider")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local MapContainer = require(script.Parent.MapContainer)
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local Logger = LoggerManager:CreateLogger("MapController")
+local MapController = Knit.CreateController({
+	Name = "MapController",
+
+	TransitionReady = Signal.new(),
+	MapUpdated = Signal.new(),
+	CurrentMap = nil,
+})
+
+-- * Constants
+local LOADMAPTIMEOUT = 5
+
+-- * Private
+function MapController:_getMap(mapName: string)
+	local mapsFolder = MapContainer.GetContainer()
+	if not mapsFolder then
+		Logger:Warn("Maps folder not found!")
+		return nil
+	end
+
+	local map = mapsFolder:WaitForChild(mapName, LOADMAPTIMEOUT)
+	if not map then
+		Logger:Warn(`Map not found: "{mapName}"`)
+		return nil
+	end
+
+	return map
+end
+
+function MapController:_applyMap(mapName: string?, transitionId: number?)
+	-- Apply when no map
+	if not mapName then
+		self.CurrentMap = nil
+		self.MapUpdated:Fire(nil, transitionId)
+		return
+	end
+
+	-- Current map is the same
+	if self.CurrentMap and self.CurrentMap.Name == mapName then
+		return
+	end
+
+	-- Get map
+	local map = self:_getMap(mapName)
+	if not map then
+		return
+	end
+
+	-- Preload
+	task.spawn(function()
+		ContentProvider:PreloadAsync((map :: Instance):GetDescendants())
+	end)
+
+	-- Apply
+	self.CurrentMap = map
+	self.MapUpdated:Fire(mapName, transitionId)
+end
+
+-- * Public
+function MapController:GetCurrentMap()
+	return self.CurrentMap
+end
+
+-- * Knit
+function MapController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+function MapController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	local MapService = Knit.GetService("MapService")
+
+	-- * Init
+	MapService:GetCurrentMapAddress()
+		:andThen(function(mapName: string?, transitionId: number)
+			if mapName then
+				self:_applyMap(mapName, transitionId)
+			end
+			Logger:Info(`Init map {mapName} successfully!`)
+		end)
+		:catch(function(err)
+			Logger:Error("Init map error!:", err)
+		end)
+
+	-- * Connections
+	MapService.MapUpdated:Connect(function(mapName: string, transitionId: number)
+		self:_applyMap(mapName, transitionId)
+	end)
+
+	self.TransitionReady:Connect(function(transitionId: number)
+		MapService:TransitionFinished(transitionId)
+			:andThen(function()
+				Logger:Info(`Send transition finished successfully!`)
+			end)
+			:catch(function(err)
+				Logger:Error("Send transition finished error!:", err)
+			end)
+	end)
+
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return MapController
+</file>
+
+<file path="src/services/MapService/MapContainer.luau">
+local RunService = game:GetService("RunService")
+
+local CONTAINER_NAME = "Maps"
+
+local MapContainer = {
+	ContainerName = CONTAINER_NAME,
+}
+
+function MapContainer.CreateContainer(): Instance?
+	if not RunService:IsServer() then
+		return
+	end
+	local container = Instance.new("Folder")
+	container.Name = CONTAINER_NAME
+	container.Parent = workspace
+	return container
+end
+
+function MapContainer.GetContainer(): Instance
+	local container = workspace:FindFirstChild(CONTAINER_NAME)
+	if not container and RunService:IsServer() then
+		container = MapContainer.CreateContainer()
+	end
+	return container
+end
+
+return MapContainer
+</file>
+
+<file path="src/services/MapService/MapFactory.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
+local GameTypes = require(ReplicatedStorage.Shared.Types.GameTypes)
+local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+local MapContainer = require(script.Parent.MapContainer)
+
+local MapFactory = {}
+
+-- * Types
+export type Mode = GameTypes.Mode
+
+-- * ONLY SERVER * --
+-- * Public
+function MapFactory.GetMapTemplate(mode: Mode, mapName: string, timeout: number): (Instance?, string?)
+	if not RunService:IsServer() then
+		Logger.warn("MapFactory", "Cannot get map template on client")
+		return nil, "Cannot get map template on client"
+	end
+
+	local assets = ServerStorage:WaitForChild("Assets", timeout)
+	if not assets then
+		return nil, "Assets folder not found!"
+	end
+
+	local mapsFolder = assets:WaitForChild("Maps", timeout)
+	if not mapsFolder then
+		return nil, "Maps folder not found!"
+	end
+
+	local modeFolder = mapsFolder and mapsFolder:WaitForChild(mode, timeout) :: Instance?
+	if not modeFolder then
+		return nil, `No maps found for mode "{mode}"`
+	end
+
+	local mapTemplate = modeFolder:WaitForChild(mapName, timeout) :: Instance?
+	return mapTemplate, if mapTemplate then nil else `No map "{mapName}" in mode "{mode}"`
+end
+
+function MapFactory.ValidateMapTemplate(template: Instance): (boolean, string?)
+	-- * Exists Validation
+	if not template then
+		return false, "Template is nil"
+	end
+
+	-- * Model Validation
+	if not template:IsA("Model") then
+		return false, `Map template "{template:GetFullName()}" must be a Model`
+	end
+
+	-- * Root Validation
+	local root = template:FindFirstChild("Root")
+	if not root then
+		return false, `Map template "{template:GetFullName()}" must contain a BasePart named "Root"`
+	end
+	if not root:IsA("BasePart") then
+		return false, `"Root" must be a BasePart`
+	end
+	if template.PrimaryPart ~= root then
+		return false, `PrimaryPart of "{template:GetFullName()}" must be set to "Root"`
+	end
+
+	-- * CameraPivot Validation
+	local cameraPivot = template:FindFirstChild("CameraPivot")
+	if not cameraPivot then
+		return false, `Map template "{template:GetFullName()}" must contain a BasePart named "CameraPivot"`
+	elseif not cameraPivot:IsA("BasePart") then
+		return false, `"CameraPivot" must be a BasePart: {template:GetFullName()}`
+	end
+
+	-- * Geometry Validation
+	local geometry = template:FindFirstChild("Geometry")
+	if not geometry then
+		return false, `Map template "{template:GetFullName()}" must contain a Folder named "Geometry"`
+	end
+	for _, part in geometry:GetChildren() do
+		if not part:IsA("BasePart") then
+			return false, `Part "{part:GetFullName()}" must be a BasePart`
+		end
+	end
+
+	-- * Props Validation
+	local props = template:FindFirstChild("Props")
+	if not props then
+		return false, `Map template "{template:GetFullName()}" must contain a Folder named "Props"`
+	end
+
+	-- * Runtime Validation
+	local runtime = template:FindFirstChild("Runtime")
+	if not runtime then
+		return false, `Map template "{template:GetFullName()}" must contain a Folder named "Runtime"`
+	end
+
+	-- * Interactables Validation
+	local interactables = template:FindFirstChild("Interactables")
+	if not interactables then
+		return false, `Map template "{template:GetFullName()}" must contain a Folder named "Interactables"`
+	end
+
+	-- * Modules Validation
+	local modules = template:FindFirstChild("Modules")
+	if not modules then
+		return false, `Map template "{template:GetFullName()}" must contain a Folder named "Modules"`
+	end
+	for _, moduleScript in modules:GetChildren() do
+		if not moduleScript:IsA("ModuleScript") then
+			return false, `Module "{moduleScript:GetFullName()}" must be a ModuleScript`
+		end
+	end
+	return true
+end
+
+function MapFactory.CreateMap(mode: Mode, mapName: string, timeout: number): (Instance?, string?)
+	if not RunService:IsServer() then
+		Logger.warn("MapFactory", "Cannot create map on client")
+		return nil, "Cannot create map on client"
+	end
+
+	-- Find map template
+	local mapTemplate, err = MapFactory.GetMapTemplate(mode, mapName, timeout)
+	if not mapTemplate then
+		return nil, err
+	end
+
+	-- Validate map template
+	local isMapValid, mapValidateErr = MapFactory.ValidateMapTemplate(mapTemplate)
+	if not isMapValid then
+		return nil, mapValidateErr
+	end
+
+	-- Create map
+	local container = MapContainer.GetContainer()
+	local map = mapTemplate:Clone()
+	map.Parent = container
+
+	return map
+end
+
+return MapFactory
+</file>
+
+<file path="src/services/MapService/MapModulesManager.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+local MapModulesManager = {}
+MapModulesManager.__index = MapModulesManager
+
+-- * Types
+export type MapModulesManager = {
+	_started: boolean,
+	_destroyed: boolean,
+	_map: Model,
+	_modules: { [string]: any },
+}
+
+-- * Utils
+local function ValidateAndRequire(moduleScript: ModuleScript): (boolean, any)
+	local success, res = pcall(require, moduleScript)
+	if not success then
+		return false, res
+	elseif typeof(res) ~= "table" then
+		return false, `Module "{moduleScript.Name}" must return a table`
+	elseif typeof(res.Init) ~= "function" then
+		return false, `Module "{moduleScript.Name}" must have Init`
+	elseif typeof(res.Start) ~= "function" then
+		return false, `Module "{moduleScript.Name}" must have Start`
+	elseif typeof(res.Destroy) ~= "function" then
+		return false, `Module "{moduleScript.Name}" must have Destroy`
+	end
+
+	return true, res
+end
+
+local function run(callback)
+	local ok, result = pcall(callback)
+	if not ok then
+		Logger.error("MapModulesManager", result)
+	end
+end
+
+-- * Constructor
+function MapModulesManager.new(map: Model)
+	local self = setmetatable({}, MapModulesManager)
+	self._started = false
+	self._destroyed = false
+	self._map = map
+	self._modules = {}
+	return self
+end
+
+-- * Public
+function MapModulesManager:Register(moduleScript: ModuleScript): (boolean, any)
+	-- Already registered
+	if self._modules[moduleScript.Name] then
+		return false, `Module "{moduleScript.Name}" is already registered`
+	end
+
+	-- Already started or destroyed
+	if self._started or self._destroyed then
+		return false, "MapModulesManager is already started or destroyed"
+	end
+
+	-- Validate
+	local ok, result = ValidateAndRequire(moduleScript)
+	if not ok then
+		return false, result
+	end
+
+	-- Register
+	self._modules[moduleScript.Name] = result
+	return true
+end
+
+function MapModulesManager:RegisterAll(moduleScripts: { ModuleScript })
+	for _, moduleScript in moduleScripts do
+		self:Register(moduleScript)
+	end
+end
+
+-- * Lifecycle
+function MapModulesManager:Start()
+	-- Already started or destroyed
+	if self._started or self._destroyed then
+		return
+	end
+	self._started = true
+
+	-- Freeze modules
+	table.freeze(self._modules)
+
+	-- Run modules
+	for _, module in pairs(self._modules) do
+		run(function()
+			module.Init(self._map)
+		end)
+	end
+	for _, module in pairs(self._modules) do
+		run(function()
+			module.Start(self._map)
+		end)
+	end
+end
+
+function MapModulesManager:Destroy()
+	-- Already destroyed
+	if self._destroyed then
+		return
+	end
+	self._destroyed = true
+
+	-- Destroy modules
+	for _, module in pairs(self._modules) do
+		run(function()
+			module.Destroy(self._map)
+		end)
+	end
+
+	--! do not clear self._modules
+end
+
+return MapModulesManager
+</file>
+
+<file path="src/services/MapService/Server.luau">
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local MapContainer = require(ReplicatedStorage.Shared.Services.MapService.MapContainer)
+local MapFactory = require(ReplicatedStorage.Shared.Services.MapService.MapFactory)
+local MapModulesManager = require(ReplicatedStorage.Shared.Services.MapService.MapModulesManager)
+local GameTypes = require(ReplicatedStorage.Shared.Types.GameTypes)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local Logger = LoggerManager:CreateLogger("MapService")
+local MapService = Knit.CreateService({
+	Name = "MapService",
+
+	Client = {
+		MapUpdated = Knit.CreateSignal(),
+
+		TransitionFinished = function(self, player, transitionId)
+			self.Server:_onTransitionFinished(player, transitionId)
+		end,
+
+		GetCurrentMapAddress = function(self)
+			local map = self.Server:GetCurrentMap()
+			return map and map.Name, self.Server:GetCurrentTransitionId()
+		end,
+	},
+
+	MapUpdated = Signal.new(),
+
+	CurrentMap = nil :: Model?,
+	_pendingMap = nil :: Model?,
+	_currentModulesManager = nil :: any,
+	_pendingModulesManager = nil :: any,
+
+	_playersAtTransition = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
+	_finishedPlayers = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
+
+	_currentTransitionId = 0,
+})
+
+-- * Types
+export type Mode = GameTypes.Mode
+export type MapModulesManager = MapModulesManager.MapModulesManager
+
+-- * Constants
+local LOAD_MAP_TIMEOUT = 10
+local TRANISTION_TIMEOUT = 30
+local TRANISTION_FINISHED_DELAY = 5
+
+-- * Private
+function MapService:_destroyPending()
+	if self._pendingModulesManager then
+		self._pendingModulesManager:Destroy()
+		self._pendingModulesManager = nil
+	end
+
+	if self._pendingMap then
+		self._pendingMap:Destroy()
+		self._pendingMap = nil
+	end
+end
+
+function MapService:_completeTransition(transitionId)
+	if transitionId ~= self._currentTransitionId then
+		return
+	end
+
+	task.delay(TRANISTION_FINISHED_DELAY, function()
+		if transitionId ~= self._currentTransitionId then
+			return
+		end
+
+		self:_destroyPending()
+	end)
+end
+
+function MapService:_onTransitionFinished(player: Player, transitionId: number)
+	if transitionId ~= self._currentTransitionId then
+		return
+	end
+
+	if not self._playersAtTransition:Has(player) then
+		return
+	end
+
+	if self._finishedPlayers:PushBack(player) then
+		if self._finishedPlayers:Size() >= self._playersAtTransition:Size() then
+			self:_completeTransition(transitionId)
+		end
+	end
+end
+
+-- * Public
+function MapService:CreateMap(mode: Mode, mapName: string, timeout: number?)
+	self:_destroyPending()
+
+	self._currentTransitionId += 1
+	local transitionId = self._currentTransitionId
+
+	-- Reset state
+	self._playersAtTransition:Clear()
+	self._finishedPlayers:Clear()
+
+	-- Snapshot current players
+	for _, player in Players:GetPlayers() do
+		self._playersAtTransition:PushBack(player)
+	end
+
+	-- Load map
+	local oldMap = self.CurrentMap
+	local newMap, err = MapFactory.CreateMap(mode :: Mode, mapName, timeout or LOAD_MAP_TIMEOUT)
+
+	if not newMap then
+		Logger:Error(err)
+		return
+	end
+
+	self.CurrentMap = newMap
+	self._pendingMap = oldMap
+
+	-- Load modules
+	local oldModulesManager = self._currentModulesManager
+	local newModulesManager = MapModulesManager.new(newMap)
+	newModulesManager:RegisterAll((newMap.Modules :: Folder):GetChildren())
+
+	self._pendingModulesManager = oldModulesManager
+	self._currentModulesManager = newModulesManager
+
+	-- start modules
+	if self._currentModulesManager then
+		self._currentModulesManager:Start()
+	end
+
+	-- Fire map updated
+	self.MapUpdated:Fire(mapName, transitionId)
+	self.Client.MapUpdated:FireAll(mapName, transitionId)
+
+	-- Timeout fallback
+	task.delay(TRANISTION_TIMEOUT, function()
+		if transitionId == self._currentTransitionId then
+			Logger:Warn(`Transition timeout. Forcing complete.`)
+			self:_completeTransition(transitionId)
+		end
+	end)
+
+	-- If no players at all
+	if self._playersAtTransition:Empty() then
+		self:_completeTransition(transitionId)
+	end
+end
+
+function MapService:GetCurrentMap(): Instance?
+	return self.CurrentMap
+end
+
+function MapService:GetCurrentTransitionId(): number
+	return self._currentTransitionId
+end
+
+-- * Knit
+function MapService:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	MapContainer.CreateContainer()
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function MapService:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+
+	Players.PlayerRemoving:Connect(function(player)
+		if self._playersAtTransition:Has(player) then
+			self:_onTransitionFinished(player, self._currentTransitionId)
+		end
+	end)
+
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return MapService
+</file>
+
+<file path="src/services/RoomService/RoomConfig.luau">
+return {
+	MaxPlayers = 6,
+	MinPlayers = 1,
+}
+</file>
+
+<file path="src/services/RoomService/RoomTypes.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
+
+export type RoomVisibility = "Public" | "Private"
+export type RoomState = "Waiting" | "Playing"
+export type RoomConfig = {
+	MaxPlayers: number?,
+	Visibility: RoomVisibility?,
+}
+export type RoomData = {
+	Id: string,
+	Host: Player,
+	Players: OrderedSet.OrderedSet<Player>,
+	MaxPlayers: number,
+	Visibility: RoomVisibility,
+	State: RoomState,
+	Ready: OrderedSet.OrderedSet<Player>,
+}
+
+export type SerializedRoomData = {
+	Id: string,
+	HostId: string?,
+	PlayerIds: { string },
+	ReadyIds: { string },
+	PlayerCount: number,
+	MaxPlayers: number,
+	Visibility: RoomVisibility,
+	State: RoomState,
+}
+
+return {}
+</file>
+
+<file path="src/services/TestService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local TestController = Knit.CreateController({ Name = "TestController" })
+local Logger = LoggerManager:CreateLogger("TestController")
+
+-- * Constants
+
+-- * Knit
+function TestController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function TestController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return TestController
+</file>
+
+<file path="src/services/TestService/Server.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local GameTypes = require(ReplicatedStorage.Shared.Types.GameTypes)
+
+local Logger = LoggerManager:CreateLogger("TestService")
+local TestService = Knit.CreateService({
+	Name = "TestService",
+	Client = {},
+})
+
+-- * Knit
+function TestService:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function TestService:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+
+	local Services = Knit.GetServices()
+	local MapService = Services.MapService
+
+	local mode: GameTypes.Mode = "Editor"
+	local mapName: string = "Prototype01"
+
+	task.wait(5)
+
+	MapService:CreateMap(mode, mapName)
+
+	MapService.MapUpdated:Connect(function(mapName: string)
+		local CharacterService = Services.CharacterService
+		CharacterService:Spawn()
+	end)
+
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+return TestService
+</file>
+
+<file path="src/services/WindService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local WindShake = require(script.Parent.WindShakeModule)
+
+local Logger = LoggerManager:CreateLogger("WindController")
+local WindController = Knit.CreateController({
+	Name = "WindController",
+})
+
+-- * Knit
+function WindController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function WindController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	WindShake:Init()
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+-- * Public
+function WindController:GetWindShaker()
+	return WindShake
+end
+
+return WindShake
+</file>
+
+<file path="src/services/CameraService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CameraRemote = require(script.Parent.CameraRemote)
+local Promise = require(ReplicatedStorage.Packages.Promise)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+
+local CameraController = Knit.CreateController({
+	Name = "CameraController",
+	_currentTransitionPromise = nil,
+})
+
+local SCOPENAME = "CameraController"
+
+-- * Private
+function CameraController:_cancelCurrent()
+	if self._currentTransitionPromise then
+		self._currentTransitionPromise:cancel()
+		self._currentTransitionPromise = nil
+	end
+end
+
+function CameraController:_playTransition()
+	return Promise.new(function(resolve, reject, onCancel)
+		local cancelled = false
+
+		onCancel(function()
+			cancelled = true
+			reject("Cancelled")
+		end)
+
+		-- TODO: fade out, blur, etc.
+		task.spawn(function()
+			if cancelled then
+				return
+			end
+
+			self:MoveCameraToCurrentMap()
+
+			resolve()
+		end)
+	end)
+end
+
+-- * Public
+function CameraController:MoveCameraTo(cameraPivot: BasePart)
+	CameraRemote:SetHost(cameraPivot)
+end
+
+function CameraController:MoveCameraToCurrentMap()
+	local MapController = Knit.GetController("MapController")
+	local map = MapController:GetCurrentMap()
+	if not map then
+		return
+	end
+
+	self:MoveCameraTo(map.CameraPivot)
+end
+
+-- * Knit
+function CameraController:KnitStart()
+	local MapController = Knit.GetController("MapController")
+
+	self:MoveCameraToCurrentMap()
+	MapController.MapUpdated:Connect(function(mapName: string, transitionId: number)
+		self:_cancelCurrent()
+
+		local promise = self:_playTransition()
+		self._currentTransitionPromise = promise
+
+		promise
+			:andThen(function()
+				if self._currentTransitionPromise ~= promise then
+					return
+				end
+
+				MapController.TransitionReady:Fire(transitionId)
+			end)
+			:catch(function(err)
+				if err ~= "Cancelled" then
+					Logger.error(SCOPENAME, err)
+					MapController.TransitionReady:Fire(transitionId)
+				end
+			end)
+			:finally(function()
+				if self._currentTransitionPromise == promise then
+					self._currentTransitionPromise = nil
+				end
+			end)
+	end)
+end
+
+return CameraController
+</file>
+
+<file path="src/services/RoomService/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RoomTypes = require(script.Parent.RoomTypes)
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local Logger = LoggerManager:CreateLogger("RoomController")
+local RoomController = Knit.CreateController({
+	Name = "RoomController",
+})
+
+-- * Types
+export type SerializedRoomData = RoomTypes.SerializedRoomData
+
+-- * Knit
+function RoomController:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+
+	self.CurrentRoom = nil
+	self.Rooms = {}
+	self.RoomsChanged = Signal.new()
+
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function RoomController:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+
+	self.RoomService = Knit.GetService("RoomService")
+
+	self.RoomService.RoomJoined:Connect(function(room)
+		print("Joined room:", room.Id)
+		self.CurrentRoom = room
+	end)
+
+	self.RoomService.RoomUpdated:Connect(function(room)
+		print("Room updated:", room.PlayerCount)
+	end)
+
+	self.RoomService.RoomLeft:Connect(function(room)
+		print("Left room")
+		self.CurrentRoom = nil
+	end)
+
+	self.RoomService.RoomStarted:Connect(function(room)
+		print("Game started!")
+	end)
+
+	self.RoomService.RoomKicked:Connect(function(reason: string, snapshot)
+		print(`Kicked from room {snapshot.Id} with reason: {reason}`)
+	end)
+
+	self.RoomService.RoomAdded:Connect(function(room)
+		self.Rooms[room.Id] = room
+		self.RoomsChanged:Fire(self.Rooms)
+	end)
+
+	self.RoomService.RoomRemoved:Connect(function(roomId)
+		self.Rooms[roomId] = nil
+		self.RoomsChanged:Fire(self.Rooms)
+	end)
+
+	self.RoomService.RoomUpdated:Connect(function(room)
+		self.Rooms[room.Id] = room
+		self.RoomsChanged:Fire(self.Rooms)
+	end)
+
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+function RoomController:GetRooms()
+	return self.Rooms :: { [string]: SerializedRoomData }
+end
+
+return RoomController
+</file>
+
+<file path="src/services/RoomService/Server.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local RoomConfig = require(ReplicatedStorage.Shared.Services.RoomService.RoomConfig)
+local RoomTypes = require(ReplicatedStorage.Shared.Services.RoomService.RoomTypes)
+
+local Logger = LoggerManager:CreateLogger("RoomService")
+local RoomService = Knit.CreateService({
+	Name = "RoomService",
+	Client = {
+		RoomAdded = Knit.CreateSignal(),
+		RoomRemoved = Knit.CreateSignal(),
+		RoomUpdated = Knit.CreateSignal(),
+		RoomJoined = Knit.CreateSignal(),
+		RoomLeft = Knit.CreateSignal(),
+		RoomStarted = Knit.CreateSignal(),
+		RoomKicked = Knit.CreateSignal(),
+
+		CreateRoom = function(self, player, config)
+			return self.Server:CreateRoom(player, config)
+		end,
+
+		JoinRoom = function(self, player, roomId)
+			return self.Server:JoinRoom(player, roomId)
+		end,
+
+		Ready = function(self, player)
+			self.Server:Ready(player)
+		end,
+
+		Unready = function(self, player)
+			self.Server:Unready(player)
+		end,
+
+		StartGame = function(self, player)
+			return self.Server:StartGame(player)
+		end,
+
+		LeaveRoom = function(self, player)
+			self.Server:LeaveRoom(player)
+		end,
+
+		Kick = function(self, host, target, reason)
+			self.Server:Kick(host, target, reason)
+		end,
+	},
+})
+
+--*Types
+type RoomVisibility = RoomTypes.RoomVisibility
+type RoomState = RoomTypes.RoomState
+type RoomConfig = RoomTypes.RoomConfig
+type RoomData = RoomTypes.RoomData
+type SerializedRoomData = RoomTypes.SerializedRoomData
+
+--* Knit
+function RoomService:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
+	self.rooms = {} :: { [string]: RoomData }
+	self.playerRoom = {} :: { [Player]: string }
+	Logger:Info(KnitMessageConfig.Initialized)
+end
+
+function RoomService:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
+	game.Players.PlayerRemoving:Connect(function(player)
+		self:LeaveRoom(player)
+	end)
+	Logger:Info(KnitMessageConfig.Started)
+end
+
+--* Methods
+-- Room Management
+function RoomService:CreateRoom(player, config: RoomConfig): (RoomData?, string?)
+	if self.playerRoom[player] then
+		return nil, "Already in a room"
+	end
+
+	local roomId = self:GenerateRoomId()
+	local room: RoomData = {
+		Id = roomId,
+		Host = player,
+		Players = OrderedSet.fromArray({ player }), -- player joins the room
+		MaxPlayers = math.clamp(
+			config.MaxPlayers or RoomConfig.MaxPlayers,
+			RoomConfig.MinPlayers,
+			RoomConfig.MaxPlayers
+		),
+		Visibility = config.Visibility or "Public",
+		State = "Waiting",
+		Ready = OrderedSet.new(),
+	}
+
+	self.rooms[roomId] = room
+	self.playerRoom[player] = roomId
+
+	-- notify
+	local snapshot = self:SerializeRoom(room)
+	self.Client.RoomJoined:Fire(player, snapshot)
+	self.Client.RoomUpdated:Fire(player, snapshot)
+	self.Client.RoomAdded:FireAll(snapshot)
+
+	return room
+end
+
+function RoomService:JoinRoom(player, roomId: string): (boolean, string?)
+	if self.playerRoom[player] then
+		return false, "Already in a room"
+	end
+
+	local room = self.rooms[roomId]
+	if not room then
+		return false, "Room not found"
+	end
+	if room.State ~= "Waiting" then
+		return false, "Game already started"
+	end
+	if room.Players:Size() >= room.MaxPlayers then
+		return false, "Room full"
+	end
+
+	room.Players:PushBack(player)
+	self.playerRoom[player] = roomId
+
+	-- notify
+	local snapshot = self:SerializeRoom(room)
+	self.Client.RoomJoined:Fire(player, snapshot)
+	room.Players:Each(function(p)
+		self.Client.RoomUpdated:Fire(p, snapshot)
+	end)
+
+	return true
+end
+
+function RoomService:DestroyRoom(roomId: string)
+	self.rooms[roomId] = nil
+	self.Client.RoomRemoved:FireAll(roomId)
+end
+
+function RoomService:LeaveRoom(player)
+	local roomId = self.playerRoom[player]
+	if not roomId then
+		return
+	end
+
+	local room = self.rooms[roomId]
+	if not room then
+		return
+	end
+
+	room.Players:Pop(player)
+	self.playerRoom[player] = nil
+
+	-- host leaves
+	if room.Host == player then
+		room.Host = room.Players:Front()
+	end
+
+	-- clean up room
+	if room.Players:Size() == 0 then
+		self.Client.RoomLeft:Fire(player) -- no fire snapshot here because the room is already gone
+		self:DestroyRoom(roomId)
+		return -- no notify because the room is already gone
+	end
+
+	-- notify
+	local snapshot = self:SerializeRoom(room)
+	self.Client.RoomLeft:Fire(player, snapshot)
+	room.Players:Each(function(p)
+		self.Client.RoomUpdated:Fire(p, snapshot)
+	end)
+end
+
+function RoomService:Ready(player)
+	local room = self:GetRoomOfPlayer(player)
+	if not room then
+		return
+	end
+	room.Ready:PushBack(player)
+end
+
+function RoomService:Unready(player)
+	local room = self:GetRoomOfPlayer(player)
+	if not room then
+		return
+	end
+	room.Ready:Pop(player)
+end
+
+function RoomService:Kick(host, target, reason)
+	local room = self:GetRoomOfPlayer(host)
+	if not room then
+		return
+	end
+	if self:GetRoomOfPlayer(target) ~= room then
+		return
+	end
+	if host ~= room.Host then
+		return
+	end
+	if target == room.Host then
+		return
+	end
+
+	self:LeaveRoom(target)
+	local snapshot = self:SerializeRoom(room)
+	self.Client.RoomKicked:Fire(target, reason, snapshot)
+end
+
+-- Room Actions
+function RoomService:StartGame(player): (boolean, string?)
+	local roomId = self.playerRoom[player]
+	local room = self.rooms[roomId]
+	if not room then
+		return false, "Room not found"
+	end
+
+	if room.Players:Size() < RoomConfig.MinPlayers then
+		return false, "Not enough players"
+	end
+
+	if room.Host ~= player then
+		return false, "Only host can start"
+	end
+
+	room.State = "Playing"
+
+	-- notify
+	local snapshot = self:SerializeRoom(room)
+	room.Players:Each(function(p)
+		self.Client.RoomStarted:Fire(p, snapshot)
+	end)
+
+	return true
+end
+
+-- Room Utils
+function RoomService:GenerateRoomId(): string
+	local id
+	repeat
+		id = tostring(math.random(10000000, 99999999))
+	until not self.rooms[id]
+	return id
+end
+
+function RoomService:GetRoomOfPlayer(player)
+	local roomId = self.playerRoom[player]
+	if not roomId then
+		return nil
+	end
+	return self.rooms[roomId]
+end
+
+function RoomService:GetPublicRooms()
+	local list = {}
+	for _, room in pairs(self.rooms) do
+		if room.Visibility == "Public" and room.State == "Waiting" then
+			table.insert(list, room)
+		end
+	end
+	return list
+end
+
+function RoomService:SerializeRoom(room: RoomData): SerializedRoomData
+	local playerIds = room.Players:Map(function(p)
+		return p.UserId
+	end)
+	local readyIds = room.Ready:Map(function(p)
+		return p.UserId
+	end)
+
+	local snapshot: SerializedRoomData = {
+		Id = room.Id,
+		HostId = room.Host and room.Host.UserId or nil,
+		PlayerIds = playerIds,
+		ReadyIds = readyIds,
+		PlayerCount = room.Players:Size(),
+		MaxPlayers = room.MaxPlayers,
+		Visibility = room.Visibility,
+		State = room.State,
+	} :: SerializedRoomData
+
+	return snapshot
+end
+
+return RoomService
+</file>
+
+</files>

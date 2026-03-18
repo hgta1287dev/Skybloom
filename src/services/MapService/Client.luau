@@ -4,11 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MapContainer = require(script.Parent.MapContainer)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
-local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
 
-local Logger = LoggerManager:CreateLogger("MapController")
-local MapController = Knit.CreateController({
+local MapController = HoenKnit.CreateController({
 	Name = "MapController",
 
 	TransitionReady = Signal.new(),
@@ -23,13 +21,13 @@ local LOADMAPTIMEOUT = 5
 function MapController:_getMap(mapName: string)
 	local mapsFolder = MapContainer.GetContainer()
 	if not mapsFolder then
-		Logger:Warn("Maps folder not found!")
+		self._logger:Warn("Maps folder not found!")
 		return nil
 	end
 
 	local map = mapsFolder:WaitForChild(mapName, LOADMAPTIMEOUT)
 	if not map then
-		Logger:Warn(`Map not found: "{mapName}"`)
+		self._logger:Warn(`Map not found: "{mapName}"`)
 		return nil
 	end
 
@@ -71,12 +69,7 @@ function MapController:GetCurrentMap()
 end
 
 -- * Knit
-function MapController:KnitInit()
-	Logger:Info(KnitMessageConfig.Initializing)
-	Logger:Info(KnitMessageConfig.Initialized)
-end
 function MapController:KnitStart()
-	Logger:Info(KnitMessageConfig.Starting)
 	local MapService = Knit.GetService("MapService")
 
 	-- * Init
@@ -85,10 +78,10 @@ function MapController:KnitStart()
 			if mapName then
 				self:_applyMap(mapName, transitionId)
 			end
-			Logger:Info(`Init map {mapName} successfully!`)
+			self._logger:Info(`Init map {mapName} successfully!`)
 		end)
 		:catch(function(err)
-			Logger:Error("Init map error!:", err)
+			self._logger:Error("Init map error!:", err)
 		end)
 
 	-- * Connections
@@ -99,14 +92,12 @@ function MapController:KnitStart()
 	self.TransitionReady:Connect(function(transitionId: number)
 		MapService:TransitionFinished(transitionId)
 			:andThen(function()
-				Logger:Info(`Send transition finished successfully!`)
+				self._logger:Info(`Send transition finished successfully!`)
 			end)
 			:catch(function(err)
-				Logger:Error("Send transition finished error!:", err)
+				self._logger:Error("Send transition finished error!:", err)
 			end)
 	end)
-
-	Logger:Info(KnitMessageConfig.Started)
 end
 
 return MapController

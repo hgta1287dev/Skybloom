@@ -1,0 +1,32 @@
+{
+  "bundles": {
+    "Ui-443": {
+      "name": "Ui",
+      "created": "2026-03-15T10:43:01.235Z",
+      "lastUsed": "2026-03-16T09:33:09.416Z",
+      "tags": [],
+      "files": [
+        "src/ui/core"
+      ]
+    },
+    "Services-790": {
+      "name": "Packages",
+      "configPath": ".repomix/config/Luveia-repomix.config.json",
+      "created": "2026-03-16T09:34:37.857Z",
+      "lastUsed": "2026-03-16T09:37:05.059Z",
+      "tags": [],
+      "files": [
+        "Packages"
+      ]
+    },
+    "Services-933": {
+      "name": "Services",
+      "created": "2026-03-16T09:36:23.288Z",
+      "lastUsed": "2026-03-16T09:36:35.910Z",
+      "tags": [],
+      "files": [
+        "src/services"
+      ]
+    }
+  }
+}

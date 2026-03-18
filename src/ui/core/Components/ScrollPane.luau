@@ -1,7 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.Packages.React)
-local BaseSurface = require(ReplicatedStorage.UI.core.Foundations.BaseSurface)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local BaseSurface = require(ReplicatedStorage.UI.core.Foundations.SurfaceCore)
 local ListLayout = require(ReplicatedStorage.UI.core.Layout.ListLayout)
 local Padding = require(ReplicatedStorage.UI.core.Layout.Padding)
 local Theme = require(ReplicatedStorage.UI.core.Theme)
@@ -19,6 +20,7 @@ export type ScrollPaneProps = {
 
 local ScrollingFrameComponent = BaseSurface.new("ScrollingFrame", "ScrollPane")
 local ScrollPane = React.forwardRef(function(props: ScrollPaneProps, ref)
+	-- * Effects
 	local style = Theme.Components.ScrollPane
 
 	local containerRef = React.useRef(nil)
@@ -48,6 +50,7 @@ local ScrollPane = React.forwardRef(function(props: ScrollPaneProps, ref)
 		end
 	end)
 
+	-- * Children
 	local children = table.clone(props.children or {})
 
 	-- padding
@@ -66,17 +69,17 @@ local ScrollPane = React.forwardRef(function(props: ScrollPaneProps, ref)
 	layoutProps.ref = layoutRef
 	children.ListLayout = e(ListLayout, layoutProps)
 
-	-- props
-	local newProps = table.clone(props)
-	newProps.ScrollBarImageColor3 = props.ScrollBarColor or style.ScrollBarColor
-	newProps.ScrollBarThickness = props.ScrollBarThickness ~= nil and props.ScrollBarThickness
-		or style.ScrollBarThickness
-	newProps.ScrollBarImageTransparency = props.ScrollBarTransparency ~= nil and props.ScrollBarTransparency
-		or style.ScrollBarTransparency
-	newProps.ref = ref
+	-- * Props
+	local newProps = TableUtil.Assign(props, {
+		ScrollBarImageColor3 = props.ScrollBarColor or style.ScrollBarColor,
+		ScrollBarThickness = props.ScrollBarThickness ~= nil and props.ScrollBarThickness or style.ScrollBarThickness,
+		ScrollBarImageTransparency = props.ScrollBarTransparency ~= nil and props.ScrollBarTransparency
+			or style.ScrollBarTransparency,
+		ScrollingDirection = props.ScrollingDirection or style.ScrollingDirection,
+		CanvasSize = props.CanvasSize or style.CanvasSize,
 
-	newProps.ScrollingDirection = props.ScrollingDirection or style.ScrollingDirection
-	newProps.CanvasSize = props.CanvasSize or style.CanvasSize
+		ref = ref,
+	})
 
 	return e(ScrollingFrameComponent, newProps, children)
 end)

@@ -1,0 +1,1522 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/ui/core
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/ui/core/_test/Widget.luau
+src/ui/core/_test/WorkingMap.luau
+src/ui/core/Components/Button.luau
+src/ui/core/Components/Image.luau
+src/ui/core/Components/Pane.luau
+src/ui/core/Components/ScrollPane.luau
+src/ui/core/Components/Shadow.luau
+src/ui/core/Components/Text.luau
+src/ui/core/Composites/Card.luau
+src/ui/core/Foundations/BaseComponent.luau
+src/ui/core/Foundations/ImageSurface.luau
+src/ui/core/Foundations/SurfaceCore.luau
+src/ui/core/Foundations/TextSurface.luau
+src/ui/core/Layout/Corner.luau
+src/ui/core/Layout/Divider.luau
+src/ui/core/Layout/ListLayout.luau
+src/ui/core/Layout/Padding.luau
+src/ui/core/Theme.luau
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/ui/core/_test/Widget.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- local Shadow = require(script.Parent.Shadow)
+local Divider = require(script.Parent.Divider)
+local Shadow = require(script.Parent.Shadow)
+local Theme = require(script.Parent.Theme)
+local React = require(ReplicatedStorage.Packages.React)
+local e = React.createElement
+
+export type WidgetProps = {
+	Shadow: boolean?,
+
+	Color: Color3?,
+	Corner: UDim?,
+	Size: UDim2?,
+	Position: UDim2?,
+	AnchorPoint: Vector2?,
+
+	HorizontalPadding: number?,
+	VerticalPadding: number?,
+	LeftPadding: number?,
+	RightPadding: number?,
+	TopPadding: number?,
+	BottomPadding: number?,
+
+	Title: string?,
+	TitleSize: UDim2?,
+	TitleFont: Enum.Font?,
+	TitleFontSize: number?,
+	TitleDivider: boolean?,
+	TitleXAlignment: Enum.TextXAlignment?,
+	TitleYAlignment: Enum.TextYAlignment?,
+
+	Visible: boolean?,
+	LayoutOrder: number?,
+
+	children: any,
+}
+function Widget(props: WidgetProps)
+	return e("Frame", {
+		Size = props.Size or UDim2.fromOffset(850, 500),
+		Position = props.Position or UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = props.AnchorPoint or Vector2.new(0.5, 0.5),
+		BorderSizePixel = 0,
+		BackgroundColor3 = props.Color or Theme.Colors.MainBackground,
+		BackgroundTransparency = 0,
+		LayoutOrder = props.LayoutOrder or 0,
+	}, {
+		UICorner = e("UICorner", {
+			CornerRadius = props.Corner or Theme.Radius.Default,
+		}),
+		UIPadding = e("UIPadding", {
+			PaddingLeft = UDim.new(0, props.LeftPadding or props.HorizontalPadding or Theme.Spacing.DefaultHorizontal),
+			PaddingRight = UDim.new(
+				0,
+				props.RightPadding or props.HorizontalPadding or Theme.Spacing.DefaultHorizontal
+			),
+			PaddingTop = UDim.new(0, props.TopPadding or props.VerticalPadding or Theme.Spacing.DefaultVertical),
+			PaddingBottom = UDim.new(0, props.BottomPadding or props.VerticalPadding or Theme.Spacing.DefaultVertical),
+		}),
+		UIListLayout = e("UIListLayout", {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, Theme.Spacing.XS),
+			Wraps = false,
+			FillDirection = Enum.FillDirection.Vertical,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Top,
+			ItemLineAlignment = Enum.ItemLineAlignment.Automatic,
+			HorizontalFlex = Enum.UIFlexAlignment.Fill,
+			VerticalFlex = Enum.UIFlexAlignment.Fill,
+		}),
+		TitleLabel = props.Title and e("TextLabel", {
+			Text = props.Title,
+			TextSize = props.TitleFontSize or Theme.FontSize.Title,
+			TextXAlignment = props.TitleXAlignment or Enum.TextXAlignment.Center,
+			TextYAlignment = props.TitleYAlignment or Enum.TextYAlignment.Center,
+			TextColor3 = Theme.Colors.MainText,
+			Font = props.TitleFont or Theme.Fonts.MainText,
+			BorderSizePixel = 0,
+			BackgroundTransparency = 1,
+			Size = props.TitleSize or UDim2.new(1, 0, 0, Theme.FontSize.Title),
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.fromScale(0.5, 0),
+			LayoutOrder = 0,
+		}),
+		TitleDivider = props.TitleDivider and e(Divider, {
+			Length = UDim.new(0.7, 0),
+			Thickness = 2,
+			LayoutOrder = 1,
+			Transparency = 0.5,
+		}),
+		Content = e("Frame", {
+			BackgroundTransparency = 1,
+			BackgroundColor3 = Color3.new(0.47451, 0.392157, 0.392157),
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			LayoutOrder = 3,
+		}, props.children),
+	})
+end
+
+return function(props: WidgetProps)
+	if props.Visible == false then
+		return nil
+	end
+
+	if props.Shadow then
+		return e(Shadow, {
+			Size = props.Size or UDim2.fromOffset(850, 500),
+		}, {
+			Content = e(Widget, props),
+		})
+	else
+		return e(Widget, props)
+	end
+end
+</file>
+
+<file path="src/ui/core/_test/WorkingMap.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local React = require(ReplicatedStorage.Packages.React)
+local e = React.createElement
+
+type WorkingMapProps = {
+	MapSize: UDim2,
+}
+
+local function WorkingMap(props: WorkingMapProps)
+	local mapRef = React.useRef(nil)
+	local containerRef = React.useRef(nil)
+	local draggerRef = React.useRef(nil)
+
+	React.useEffect(function()
+		local container = containerRef.current :: ScrollingFrame?
+		local map = mapRef.current :: GuiObject?
+		local dragger = draggerRef.current :: UIDragDetector?
+
+		if not (container and map and dragger) then
+			return
+		end
+
+		--* Dragging logic
+		local lastDragPos = Vector2.zero
+
+		local dragStartConn = dragger.DragStart:Connect(function(pos: Vector2)
+			lastDragPos = pos
+		end)
+
+		local dragContinueConn = dragger.DragContinue:Connect(function(pos: Vector2)
+			local delta = pos - lastDragPos
+
+			container.CanvasPosition -= delta
+			lastDragPos = pos
+		end)
+
+		--* Resizing logic
+		local function updateCanvas()
+			container.CanvasSize = UDim2.fromOffset(map.AbsoluteSize.X, map.AbsoluteSize.Y)
+		end
+		updateCanvas() -- Initial call
+		local sizeChangedConn = map:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvas)
+
+		--* Disconnect
+		return function()
+			dragStartConn:Disconnect()
+			dragContinueConn:Disconnect()
+			sizeChangedConn:Disconnect()
+		end
+	end, {})
+
+	return e("CanvasGroup", {
+		Size = UDim2.fromScale(1, 1),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 1,
+	}, {
+		Container = e("ScrollingFrame", {
+			Size = UDim2.fromScale(1, 1),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundTransparency = 1,
+			CanvasSize = UDim2.fromOffset(0, 0),
+			CanvasPosition = Vector2.zero,
+			ScrollingEnabled = false,
+			ScrollBarThickness = 0,
+			ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0),
+			ScrollBarImageTransparency = 0.5,
+			ScrollingDirection = Enum.ScrollingDirection.XY,
+
+			ref = containerRef,
+		}, {
+			Map = e("Frame", {
+				Size = props.MapSize,
+				Position = UDim2.fromScale(0.5, 0.5),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+				ref = mapRef,
+			}, {
+				UIDragDetector = e("UIDragDetector", {
+					DragStyle = Enum.UIDragDetectorDragStyle.Scriptable,
+					ref = draggerRef,
+				}),
+				TestImage = e("ImageLabel", {
+					Size = UDim2.fromScale(1, 1),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Image = "rbxassetid://6028276525",
+					ScaleType = Enum.ScaleType.Tile,
+					TileSize = UDim2.fromOffset(100, 100),
+					BackgroundTransparency = 1,
+				}),
+			}),
+		}),
+	})
+end
+
+return function(props: WorkingMapProps)
+	return e(WorkingMap, props, {})
+end
+</file>
+
+<file path="src/ui/core/Composites/Card.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local React = require(ReplicatedStorage.Packages.React)
+local Pane = require(ReplicatedStorage.UI.core.Components.Pane)
+local e = React.createElement
+
+local function Card(props)
+	return e(Pane, {
+		BackgroundTransparency = 1,
+		LayoutOrder = props.LayoutOrder,
+		Size = UDim2.fromScale(1, 1),
+	})
+end
+</file>
+
+<file path="src/ui/core/Components/Button.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local TextSurface = require(ReplicatedStorage.UI.core.Foundations.TextSurface)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+local e = React.createElement
+
+export type ButtonProps = {
+	Active: boolean?,
+
+	UseEffect: boolean?,
+
+	HoverStyle: { [string]: any }?,
+	ClickStyle: { [string]: any }?,
+
+	OnMouseEnter: (() -> ())?,
+	OnMouseLeave: (() -> ())?,
+	OnMouseDown: (() -> ())?,
+	OnMouseUp: (() -> ())?,
+	OnActivated: (() -> ())?,
+} & TextSurface.TextSurfaceProps
+
+-- * Utils
+local function GetDefaultStyle(instance: GuiButton, ...)
+	local style = TableUtil.Assign(...)
+	local finalStyle = {}
+	for key, _ in pairs(style) do
+		local success, value = pcall(function()
+			return instance[key]
+		end)
+		if not success then
+			warn(`key {key} not found in {instance}`)
+		else
+			finalStyle[key] = value
+		end
+	end
+	return finalStyle
+end
+
+-- * Element
+local TextButtonComponent = TextSurface.new("TextButton", "Button")
+local Button = React.forwardRef(function(props: ButtonProps, ref)
+	-- * Effect
+	-- theme
+	local style = Theme.Components.Button
+
+	-- state effect
+	local buttonRef = React.useRef(nil)
+	local defaultStyleRef = React.useRef(nil)
+
+	local hovered, setHovered = React.useState(false)
+	local pressed, setPressed = React.useState(false)
+
+	React.useEffect(function()
+		if props.UseEffect == false then
+			return
+		end
+
+		local button = buttonRef.current
+		if not button then
+			return
+		end
+
+		local hoverStyle = props.HoverStyle or style.HoverStyle
+		local clickStyle = props.ClickStyle or style.ClickStyle
+
+		if not defaultStyleRef.current then
+			defaultStyleRef.current = GetDefaultStyle(button, hoverStyle, clickStyle)
+		end
+		local defaultStyle = defaultStyleRef.current
+	end)
+
+	-- * Children
+	local children = table.clone(props.children)
+
+	-- * Props
+	local newProps = TableUtil.Assign(props, {
+		Active = props.Active or style.Active,
+		[React.Event.MouseEnter] = function()
+			setHovered(true)
+		end,
+		[React.Event.MouseLeave] = function()
+			setHovered(false)
+		end,
+		[React.Event.MouseDown] = function()
+			setPressed(true)
+		end,
+		[React.Event.MouseUp] = function()
+			setPressed(false)
+		end,
+		[React.Event.Activated] = function()
+			setPressed(false)
+		end,
+
+		ref = ref,
+	})
+
+	return e(TextButtonComponent, newProps, children)
+end)
+
+return Button
+</file>
+
+<file path="src/ui/core/Components/Image.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ImageSurface = require(ReplicatedStorage.UI.core.Foundations.ImageSurface)
+
+export type ImageProps = ImageSurface.ImageSurfaceProps
+return ImageSurface.new("ImageLabel", "Pane")
+</file>
+
+<file path="src/ui/core/Components/Pane.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SurfaceCore = require(ReplicatedStorage.UI.core.Foundations.SurfaceCore)
+
+export type PaneProps = SurfaceCore.SurfaceProps
+return SurfaceCore.new("Frame", "Pane")
+</file>
+
+<file path="src/ui/core/Components/ScrollPane.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local BaseSurface = require(ReplicatedStorage.UI.core.Foundations.SurfaceCore)
+local ListLayout = require(ReplicatedStorage.UI.core.Layout.ListLayout)
+local Padding = require(ReplicatedStorage.UI.core.Layout.Padding)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+
+local e = React.createElement
+
+export type ScrollPaneProps = {
+	ScrollBarColor: Color3?,
+	ScrollBarTransparency: number?,
+	ScrollBarThickness: number?,
+	ScrollingDirection: Enum.ScrollingDirection?,
+
+	CanvasSize: UDim2?,
+} & BaseSurface.SurfaceProps & ListLayout.ListLayoutProps
+
+local ScrollingFrameComponent = BaseSurface.new("ScrollingFrame", "ScrollPane")
+local ScrollPane = React.forwardRef(function(props: ScrollPaneProps, ref)
+	-- * Effects
+	local style = Theme.Components.ScrollPane
+
+	local containerRef = React.useRef(nil)
+	local layoutRef = React.useRef(nil)
+
+	React.useImperativeHandle(ref, function()
+		return containerRef.current
+	end)
+
+	React.useEffect(function()
+		local container = containerRef.current :: ScrollingFrame?
+		local layout = layoutRef.current :: UIListLayout?
+
+		if not (container and layout) then
+			return
+		end
+
+		local function updateCanvas()
+			container.CanvasSize = UDim2.fromOffset(layout.AbsoluteContentSize.X, layout.AbsoluteContentSize.Y)
+		end
+		updateCanvas()
+
+		local contentSizeChangedConn = layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+
+		return function()
+			contentSizeChangedConn:Disconnect()
+		end
+	end)
+
+	-- * Children
+	local children = table.clone(props.children or {})
+
+	-- padding
+	children.Padding = e(Padding, props)
+	props.Radius = nil
+
+	-- list layout
+	local layoutStyle = Theme.Components.ListLayout
+	local layoutProps = table.clone(layoutStyle)
+	for key, value in pairs(layoutProps) do
+		if props[key] ~= nil then
+			layoutProps[key] = props[key]
+			props[key] = nil
+		end
+	end
+	layoutProps.ref = layoutRef
+	children.ListLayout = e(ListLayout, layoutProps)
+
+	-- * Props
+	local newProps = TableUtil.Assign(props, {
+		ScrollBarImageColor3 = props.ScrollBarColor or style.ScrollBarColor,
+		ScrollBarThickness = props.ScrollBarThickness ~= nil and props.ScrollBarThickness or style.ScrollBarThickness,
+		ScrollBarImageTransparency = props.ScrollBarTransparency ~= nil and props.ScrollBarTransparency
+			or style.ScrollBarTransparency,
+		ScrollingDirection = props.ScrollingDirection or style.ScrollingDirection,
+		CanvasSize = props.CanvasSize or style.CanvasSize,
+
+		ref = ref,
+	})
+
+	return e(ScrollingFrameComponent, newProps, children)
+end)
+
+return ScrollPane
+</file>
+
+<file path="src/ui/core/Components/Shadow.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+
+local e = React.createElement
+
+local ElevationMap = { -- [1] transparency, [2] scale
+	[Theme.Semantic.Elevation.None] = { 1, 1 },
+	[Theme.Semantic.Elevation.Low] = { 0.98, 1.03 },
+	[Theme.Semantic.Elevation.Medium] = { 0.96, 1.05 },
+	[Theme.Semantic.Elevation.High] = { 0.94, 1.065 },
+	[Theme.Semantic.Elevation.Overlay] = { 0.92, 1.08 },
+}
+
+export type ShadownProps = {
+	Elevation: number,
+	ZIndex: number,
+	Radius: UDim2?,
+}
+local function Shadow(props: ShadownProps)
+	local elevation = props.Elevation or Theme.Semantic.Elevation.Low
+	local visual = ElevationMap[elevation]
+
+	return e("ImageLabel", {
+		BackgroundTransparency = 1,
+		Image = "rbxassetid://1316045217",
+		ImageColor3 = Color3.new(0, 0, 0),
+		ImageTransparency = visual[1],
+
+		Size = UDim2.fromScale(visual[2], visual[2]),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+
+		ZIndex = (props.ZIndex or 0) - 1,
+	}, {
+		Corner = e("UICorner", {
+			CornerRadius = props.Radius or 0,
+		}),
+	})
+end
+
+return Shadow
+</file>
+
+<file path="src/ui/core/Components/Text.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextSurface = require(ReplicatedStorage.UI.core.Foundations.TextSurface)
+
+export type TextProps = TextSurface.TextSurfaceProps
+return TextSurface.new("TextLabel", "Text")
+</file>
+
+<file path="src/ui/core/Foundations/BaseComponent.luau">
+local BaseComponent = {}
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local React = require(ReplicatedStorage.Packages.React)
+
+local e = React.createElement
+
+function BaseComponent.new(instanceType: string, createApi: ((instance: Instance) -> any)?)
+	return React.forwardRef(function(props, ref)
+		local innerRef = React.useRef(nil)
+
+		if createApi then
+			React.useImperativeHandle(ref, function()
+				return createApi(innerRef.current)
+			end)
+		else
+			React.useImperativeHandle(ref, function()
+				return innerRef.current
+			end)
+		end
+
+		local newProps = table.clone(props)
+		newProps.ref = innerRef
+
+		return e(instanceType, newProps, props.children)
+	end)
+end
+
+return BaseComponent
+</file>
+
+<file path="src/ui/core/Foundations/ImageSurface.luau">
+-- ImageSurface.lua
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SurfaceCore = require(script.Parent.SurfaceCore)
+local React = require(ReplicatedStorage.Packages.React)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+
+local e = React.createElement
+
+export type ImageSurfaceProps = {
+	Image: string?,
+	ImageColor: Color3?,
+	ImageTransparency: number?,
+	TileSize: UDim2?,
+	ScaleType: Enum.ScaleType?,
+	SliceCenter: Rect?,
+	SliceScale: number?,
+} & SurfaceCore.SurfaceProps
+
+local ImageSurface = {}
+
+function ImageSurface.new(className: string, themeName: string?)
+	local resolvedTheme = themeName or "Image"
+	local Base = SurfaceCore.new(className, resolvedTheme)
+
+	return React.forwardRef(function(props: ImageSurfaceProps, ref)
+		local style = Theme.Components[resolvedTheme] or {}
+
+		local newProps = table.clone(props)
+
+		-- * Image behavior
+		newProps.Image = props.Image or style.Image
+		newProps.ImageColor3 = props.ImageColor or style.ImageColor
+		newProps.ImageTransparency = props.ImageTransparency ~= nil and props.ImageTransparency
+			or style.ImageTransparency
+
+		newProps.TileSize = props.TileSize or style.TileSize
+		newProps.ScaleType = props.ScaleType or style.ScaleType
+		newProps.SliceCenter = props.SliceCenter or style.SliceCenter
+		newProps.SliceScale = props.SliceScale or style.SliceScale
+
+		newProps.ref = ref
+
+		-- cleanup custom props
+		newProps.ImageColor = nil
+		newProps.ImageTransparency = nil
+
+		return e(Base, newProps, props.children)
+	end)
+end
+
+return ImageSurface
+</file>
+
+<file path="src/ui/core/Foundations/SurfaceCore.luau">
+-- SurfaceCore.lua
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local Shadow = require(ReplicatedStorage.UI.core.Components.Shadow)
+local BaseComponent = require(script.Parent.BaseComponent)
+local Corner = require(ReplicatedStorage.UI.core.Layout.Corner)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+
+local e = React.createElement
+
+export type SurfaceProps = {
+	-- Transform
+	Size: UDim2?,
+	Position: UDim2?,
+	AnchorPoint: Vector2?,
+	Rotation: number?,
+
+	-- Visual
+	Color: Color3?,
+	BorderSize: number?,
+	Transparency: number?,
+	Clips: boolean?,
+
+	-- Decoration
+	Shadow: boolean?,
+	Radius: UDim?, -- semantic radius
+	Elevation: number?, -- semantic elevation
+
+	-- Layout
+	ZIndex: number?,
+	Visible: boolean?,
+	LayoutOrder: number?,
+
+	[any]: any,
+}
+
+local SurfaceCore = {}
+
+function SurfaceCore.new(className: string, themeName: string)
+	local Primitive = BaseComponent.new(className)
+
+	return React.forwardRef(function(props: SurfaceProps, ref)
+		local style = Theme.Components[themeName]
+		if not style then
+			warn("No theme found for " .. themeName)
+			style = {}
+		end
+
+		local frameProps = {} :: SurfaceProps
+
+		-- * Transform
+		frameProps.Size = props.Size or style.Size
+		frameProps.Position = props.Position or style.Position
+		frameProps.AnchorPoint = props.AnchorPoint or style.AnchorPoint
+		frameProps.Rotation = props.Rotation ~= nil and props.Rotation or style.Rotation
+
+		-- * Visual
+		frameProps.BackgroundColor3 = props.Color or style.Color
+		frameProps.BorderSizePixel = props.BorderSize ~= nil and props.BorderSize or style.BorderSize
+		frameProps.BackgroundTransparency = props.Transparency ~= nil and props.Transparency or style.Transparency
+		frameProps.ClipsDescendants = props.Clips ~= nil and props.Clips or style.Clips
+
+		-- * Layout
+		frameProps.ZIndex = props.ZIndex ~= nil and props.ZIndex or style.ZIndex
+		frameProps.Visible = props.Visible ~= nil and props.Visible or style.Visible
+		frameProps.LayoutOrder = props.LayoutOrder ~= nil and props.LayoutOrder or style.LayoutOrder
+
+		frameProps.ref = ref
+
+		-- * Decoration injection
+		local children = table.clone(props.children or {})
+
+		local radius = props.Radius or style.Radius or Theme.Components.Corner.Radius
+		children.Corner = e(Corner, {
+			Radius = radius,
+		})
+
+		if props.Shadow then
+			local containerProps = {
+				Size = frameProps.Size,
+				AnchorPoint = frameProps.AnchorPoint,
+				Position = frameProps.Position,
+				Rotation = frameProps.Rotation,
+				BackgroundTransparency = 1,
+				ZIndex = frameProps.ZIndex,
+				Visible = frameProps.Visible,
+				LayoutOrder = frameProps.LayoutOrder,
+			}
+
+			frameProps.Size = UDim2.fromScale(1, 1)
+			frameProps.Position = UDim2.fromScale(0.5, 0.5)
+			frameProps.AnchorPoint = Vector2.new(0.5, 0.5)
+			frameProps.Rotation = 0
+			frameProps.ZIndex = 0
+
+			return e("Frame", containerProps, {
+				Shadow = e(
+					Shadow,
+					{
+						Elevation = props.Elevation,
+						ZIndex = frameProps.ZIndex,
+						Radius = radius,
+					} :: Shadow.ShadownProps
+				),
+
+				Content = e(Primitive, frameProps, children),
+			})
+		end
+
+		return e(Primitive, frameProps, children)
+	end)
+end
+
+return SurfaceCore
+</file>
+
+<file path="src/ui/core/Foundations/TextSurface.luau">
+-- TextSurface.lua
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local SurfaceCore = require(script.Parent.SurfaceCore)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+
+local e = React.createElement
+
+export type TextSurfaceProps = {
+	Text: string?,
+	Variant: ("Display" | "Heading" | "Title" | "Body" | "Caption" | "Button")?,
+
+	TextFont: Enum.Font?,
+	TextSize: number?,
+	TextColor: Color3?,
+	TextTransparency: number?,
+	RichText: boolean?,
+
+	TextXAlignment: Enum.TextXAlignment?,
+	TextYAlignment: Enum.TextYAlignment?,
+	TextWrapped: boolean?,
+	TextTruncate: Enum.TextTruncate?,
+
+	[any]: any,
+} & SurfaceCore.SurfaceProps
+
+local TextSurface = {}
+
+function TextSurface.new(className: string, themeName: string)
+	local Base = SurfaceCore.new(className, themeName)
+
+	return React.forwardRef(function(props: TextSurfaceProps, ref)
+		local style = Theme.Components[themeName] or {}
+		local variant = props.Variant or style.Variant or "Body"
+
+		local typo = Theme.Semantic.Typography[variant]
+
+		local newProps = {}
+
+		-- * Surface props pass-through
+		for key, value in pairs(props) do
+			newProps[key] = value
+		end
+
+		-- * Typography
+		newProps.Text = props.Text or style.Text
+		newProps.Font = props.TextFont or typo.Font
+		newProps.TextSize = props.TextSize or typo.Size
+
+		newProps.TextColor3 = props.TextColor or style.TextColor
+		newProps.TextTransparency = props.TextTransparency ~= nil and props.TextTransparency or style.TextTransparency
+
+		newProps.RichText = props.RichText ~= nil and props.RichText or style.RichText
+
+		newProps.TextXAlignment = props.TextXAlignment or style.TextXAleignment
+		newProps.TextYAlignment = props.TextYAlignment or style.TextYAlignment
+
+		newProps.TextWrapped = props.TextWrapped ~= nil and props.TextWrapped or style.TextWrapped
+
+		newProps.TextTruncate = props.TextTruncate ~= nil and props.TextTruncate or style.TextTruncate
+
+		newProps.ref = ref
+
+		-- cleanup custom props
+		newProps.Variant = nil
+		newProps.TextFont = nil
+		newProps.TextSize = nil
+		newProps.TextColor = nil
+		newProps.TextTransparency = nil
+
+		return e(Base, newProps, props.children)
+	end)
+end
+
+return TextSurface
+</file>
+
+<file path="src/ui/core/Layout/Corner.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local React = require(ReplicatedStorage.Packages.React)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+local e = React.createElement
+
+export type CornerProps = {
+	Radius: UDim?,
+}
+local function Corner(props: CornerProps)
+	local style = Theme.Components.Corner
+	return e("UICorner", {
+		CornerRadius = props.Radius or style.Radius,
+	})
+end
+
+return Corner
+</file>
+
+<file path="src/ui/core/Layout/Divider.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Corner = require(script.Parent.Corner)
+local React = require(ReplicatedStorage.Packages.React)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+local BaseComponent = require(ReplicatedStorage.UI.utils.BaseComponent)
+
+local e = React.createElement
+
+export type DividerProps = {
+	Vertical: boolean?,
+
+	Length: UDim?,
+	Thickness: number?,
+	AnchorPoint: Vector2?,
+	Position: UDim2?,
+
+	Color: Color3?,
+	Radius: UDim?,
+	BorderSize: number?,
+	Transparency: number?,
+
+	LayoutOrder: number?,
+	Visible: boolean?,
+}
+
+local FrameComponent = BaseComponent.new("Frame")
+local Divider = React.forwardRef(function(props: DividerProps, ref)
+	local style = Theme.Components.Divider
+
+	local vertical = if props.Vertical ~= nil then props.Vertical else style.Vertical
+	local length = props.Length or style.Length
+	local thickness = props.Thickness or style.Thickness
+	local visible = if props.Visible ~= nil then props.Visible else style.Visible
+	local transparency = if props.Transparency ~= nil then props.Transparency else style.Transparency
+
+	local size = if vertical
+		then UDim2.new(0, thickness, length.Scale, length.Offset)
+		else UDim2.new(length.Scale, length.Offset, 0, thickness)
+
+	return e("Frame", {
+		Size = size,
+		AnchorPoint = props.AnchorPoint or style.AnchorPoint,
+		Position = props.Position or style.Position,
+		BackgroundTransparency = 1,
+	}, {
+		e(FrameComponent, {
+			Size = size,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+
+			BackgroundColor3 = props.Color or style.Color,
+			BackgroundTransparency = transparency,
+			BorderSizePixel = props.BorderSize or style.BorderSize,
+
+			LayoutOrder = props.LayoutOrder or style.LayoutOrder,
+			Visible = visible,
+
+			ref = ref,
+		}, {
+			Corner = e(Corner, {
+				Radius = props.Radius or style.Radius,
+			}),
+		}),
+	})
+end)
+
+return Divider
+</file>
+
+<file path="src/ui/core/Layout/ListLayout.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+local React = require(ReplicatedStorage.Packages.React)
+local BaseComponent = require(ReplicatedStorage.UI.core.Foundations.BaseComponent)
+local e = React.createElement
+
+export type ListLayoutProps = {
+	SortOrder: Enum.SortOrder?,
+	Spacing: number?,
+	HorizontalAlignment: Enum.HorizontalAlignment?,
+	VerticalAlignment: Enum.VerticalAlignment?,
+	FillDirection: Enum.FillDirection?,
+	HorizontalFlex: Enum.UIFlexAlignment?,
+	VerticalFlex: Enum.UIFlexAlignment?,
+	Wraps: boolean?,
+
+	[any]: any,
+}
+local UIListLayoutComponent = BaseComponent.new("UIListLayout")
+local ListLayout = React.forwardRef(function(props: ListLayoutProps, ref)
+	local style = Theme.Components.ListLayout
+	return e(UIListLayoutComponent, {
+		SortOrder = props.SortOrder or style.SortOrder,
+		Padding = UDim.new(0, props.Spacing ~= nil and props.Spacing or style.Spacing),
+		HorizontalAlignment = props.HorizontalAlignment or style.HorizontalAlignment,
+		VerticalAlignment = props.VerticalAlignment or style.VerticalAlignment,
+		FillDirection = props.FillDirection or style.FillDirection,
+		HorizontalFlex = props.HorizontalFlex or style.HorizontalFlex,
+		VerticalFlex = props.VerticalFlex or style.VerticalFlex,
+		Wraps = props.Wraps ~= nil and props.Wraps or style.Wraps,
+		ref = ref,
+	})
+end)
+
+return ListLayout
+</file>
+
+<file path="src/ui/core/Layout/Padding.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local React = require(ReplicatedStorage.Packages.React)
+local Theme = require(ReplicatedStorage.UI.core.Theme)
+local e = React.createElement
+
+export type PaddingProps = {
+	HorizontalSpacing: number?,
+	VerticalSpacing: number?,
+	LeftSpacing: number?,
+	RightSpacing: number?,
+	TopSpacing: number?,
+	BottomSpacing: number?,
+}
+
+function Padding(props: PaddingProps)
+	local style = Theme.Components.Padding
+	return e("UIPadding", {
+		PaddingLeft = UDim.new(0, props.LeftSpacing or props.HorizontalSpacing or style.HorizontalSpacing),
+		PaddingRight = UDim.new(0, props.RightSpacing or props.HorizontalSpacing or style.HorizontalSpacing),
+		PaddingTop = UDim.new(0, props.TopSpacing or props.VerticalSpacing or style.VerticalSpacing),
+		PaddingBottom = UDim.new(0, props.BottomSpacing or props.VerticalSpacing or style.VerticalSpacing),
+	})
+end
+
+return Padding
+</file>
+
+<file path="src/ui/core/Theme.luau">
+local Theme = {}
+
+Theme.Primitives = {
+	Colors = {
+		White = Color3.fromRGB(255, 255, 255),
+		Black = Color3.fromRGB(0, 0, 0),
+
+		-- GRAY
+		Gray50 = Color3.fromRGB(250, 250, 250),
+		Gray100 = Color3.fromRGB(245, 245, 245),
+		Gray200 = Color3.fromRGB(229, 229, 229),
+		Gray300 = Color3.fromRGB(212, 212, 212),
+		Gray400 = Color3.fromRGB(163, 163, 163),
+		Gray500 = Color3.fromRGB(115, 115, 115),
+		Gray600 = Color3.fromRGB(82, 82, 82),
+		Gray700 = Color3.fromRGB(64, 64, 64),
+		Gray800 = Color3.fromRGB(38, 38, 38),
+		Gray900 = Color3.fromRGB(23, 23, 23),
+
+		-- RED
+		Red50 = Color3.fromRGB(254, 242, 242),
+		Red100 = Color3.fromRGB(254, 226, 226),
+		Red300 = Color3.fromRGB(252, 165, 165),
+		Red500 = Color3.fromRGB(239, 68, 68),
+		Red700 = Color3.fromRGB(185, 28, 28),
+		Red900 = Color3.fromRGB(127, 29, 29),
+
+		-- BLUE
+		Blue50 = Color3.fromRGB(239, 246, 255),
+		Blue100 = Color3.fromRGB(219, 234, 254),
+		Blue300 = Color3.fromRGB(147, 197, 253),
+		Blue500 = Color3.fromRGB(59, 130, 246),
+		Blue700 = Color3.fromRGB(29, 78, 216),
+		Blue900 = Color3.fromRGB(30, 58, 138),
+
+		-- GREEN
+		Green50 = Color3.fromRGB(240, 253, 244),
+		Green100 = Color3.fromRGB(220, 252, 231),
+		Green300 = Color3.fromRGB(134, 239, 172),
+		Green500 = Color3.fromRGB(34, 197, 94),
+		Green700 = Color3.fromRGB(21, 128, 61),
+		Green900 = Color3.fromRGB(20, 83, 45),
+
+		-- YELLOW
+		Yellow50 = Color3.fromRGB(254, 252, 232),
+		Yellow100 = Color3.fromRGB(254, 249, 195),
+		Yellow300 = Color3.fromRGB(253, 224, 71),
+		Yellow500 = Color3.fromRGB(234, 179, 8),
+		Yellow700 = Color3.fromRGB(161, 98, 7),
+		Yellow900 = Color3.fromRGB(113, 63, 18),
+
+		-- PURPLE
+		Purple50 = Color3.fromRGB(250, 245, 255),
+		Purple100 = Color3.fromRGB(243, 232, 255),
+		Purple300 = Color3.fromRGB(196, 181, 253),
+		Purple500 = Color3.fromRGB(139, 92, 246),
+		Purple700 = Color3.fromRGB(109, 40, 217),
+		Purple900 = Color3.fromRGB(88, 28, 135),
+
+		-- ORANGE
+		Orange50 = Color3.fromRGB(255, 247, 237),
+		Orange100 = Color3.fromRGB(255, 237, 213),
+		Orange300 = Color3.fromRGB(253, 186, 116),
+		Orange500 = Color3.fromRGB(249, 115, 22),
+		Orange700 = Color3.fromRGB(194, 65, 12),
+		Orange900 = Color3.fromRGB(124, 45, 18),
+
+		-- PINK
+		Pink50 = Color3.fromRGB(253, 242, 248),
+		Pink100 = Color3.fromRGB(252, 231, 243),
+		Pink300 = Color3.fromRGB(249, 168, 212),
+		Pink500 = Color3.fromRGB(236, 72, 153),
+		Pink700 = Color3.fromRGB(190, 24, 93),
+		Pink900 = Color3.fromRGB(131, 24, 67),
+
+		-- TEAL
+		Teal50 = Color3.fromRGB(240, 253, 250),
+		Teal100 = Color3.fromRGB(204, 251, 241),
+		Teal300 = Color3.fromRGB(94, 234, 212),
+		Teal500 = Color3.fromRGB(20, 184, 166),
+		Teal700 = Color3.fromRGB(15, 118, 110),
+		Teal900 = Color3.fromRGB(19, 78, 74),
+
+		-- INDIGO
+		Indigo50 = Color3.fromRGB(238, 242, 255),
+		Indigo100 = Color3.fromRGB(224, 231, 255),
+		Indigo300 = Color3.fromRGB(165, 180, 252),
+		Indigo500 = Color3.fromRGB(99, 102, 241),
+		Indigo700 = Color3.fromRGB(67, 56, 202),
+		Indigo900 = Color3.fromRGB(49, 46, 129),
+
+		-- PRIMARY
+		Primary100 = Color3.fromRGB(230, 190, 190),
+		Primary300 = Color3.fromRGB(210, 170, 170),
+		Primary500 = Color3.fromRGB(200, 160, 160),
+		Primary700 = Color3.fromRGB(170, 130, 130),
+	},
+
+	FontWeight = {
+		Light = Enum.Font.SourceSansLight,
+		Regular = Enum.Font.SourceSans,
+		Semibold = Enum.Font.SourceSansSemibold,
+		Bold = Enum.Font.SourceSansBold,
+	},
+
+	FontSize = {
+		XXXL = 48,
+		XXL = 32,
+		XL = 24,
+		LG = 20,
+		MD = 16,
+		SM = 14,
+		XS = 12,
+	},
+
+	Radius = {
+		Pill = UDim.new(1, 0),
+		XXL = UDim.new(0, 32),
+		XL = UDim.new(0, 24),
+		LG = UDim.new(0, 16),
+		MD = UDim.new(0, 8),
+		SM = UDim.new(0, 4),
+		None = UDim.new(0, 0),
+	},
+
+	Spacing = {
+		XXL = 40,
+		XL = 32,
+		LG = 24,
+		MD = 16,
+		SM = 8,
+		XS = 4,
+		None = 0,
+	},
+
+	Size = {
+		Full = UDim2.fromScale(1, 1),
+		Half = UDim2.fromScale(0.5, 0.5),
+		FillWidth = UDim2.fromScale(1, 0),
+		FillHeight = UDim2.fromScale(0, 1),
+	},
+
+	Position = {
+		Center = UDim2.fromScale(0.5, 0.5),
+		Top = UDim2.fromScale(0.5, 0),
+		Right = UDim2.fromScale(1, 0.5),
+		Bottom = UDim2.fromScale(0.5, 1),
+		Left = UDim2.fromScale(0, 0.5),
+
+		TopLeft = UDim2.fromOffset(0, 0),
+		TopRight = UDim2.fromOffset(1, 0),
+		BottomLeft = UDim2.fromOffset(0, 1),
+		BottomRight = UDim2.fromOffset(1, 1),
+	},
+
+	AnchorPoint = {
+		Center = Vector2.new(0.5, 0.5),
+		Top = Vector2.new(0.5, 0),
+		Right = Vector2.new(1, 0.5),
+		Bottom = Vector2.new(0.5, 1),
+		Left = Vector2.new(0, 0.5),
+
+		TopLeft = Vector2.new(0, 0),
+		TopRight = Vector2.new(1, 0),
+		BottomLeft = Vector2.new(0, 1),
+		BottomRight = Vector2.new(1, 1),
+	},
+
+	Elevation = {
+		Level0 = 0,
+		Level1 = 10,
+		Level2 = 20,
+		Level3 = 30,
+		Level4 = 40,
+		Level5 = 50,
+		Level6 = 60,
+		Level7 = 70,
+		Level8 = 80,
+		Level9 = 90,
+		Level10 = 100,
+	},
+}
+
+Theme.Semantic = {
+	--* =========================
+	--* 🎨 SURFACE (background layers)
+	--* =========================
+	Surface = {
+		Base = Theme.Primitives.Colors.White,
+		Subtle = Theme.Primitives.Colors.Gray50,
+		Muted = Theme.Primitives.Colors.Gray100,
+		Inverse = Theme.Primitives.Colors.Gray900,
+
+		Card = Theme.Primitives.Colors.White,
+		Overlay = Theme.Primitives.Colors.Gray100,
+		OverlayTransparency = 0.8,
+	},
+
+	--* =========================
+	--* 📝 TEXT
+	--* =========================
+	Text = {
+		Primary = Theme.Primitives.Colors.Gray900,
+		Secondary = Theme.Primitives.Colors.Gray600,
+		Tertiary = Theme.Primitives.Colors.Gray500,
+		Inverse = Theme.Primitives.Colors.White,
+		Disabled = Theme.Primitives.Colors.Gray400,
+		Brand = Theme.Primitives.Colors.Primary500,
+	},
+
+	--* =========================
+	--* 🔲 BORDER
+	--* =========================
+	Border = {
+		Default = Theme.Primitives.Colors.Gray200,
+		Subtle = Theme.Primitives.Colors.Gray100,
+		Strong = Theme.Primitives.Colors.Gray400,
+		Focus = Theme.Primitives.Colors.Primary500,
+		Disabled = Theme.Primitives.Colors.Gray200,
+	},
+
+	--* =========================
+	--* 🎯 INTERACTIVE STATES
+	--* =========================
+	Interactive = {
+		Primary = {
+			Background = Theme.Primitives.Colors.Primary500,
+			Hover = Theme.Primitives.Colors.Primary700,
+			Pressed = Theme.Primitives.Colors.Primary700,
+			Text = Theme.Primitives.Colors.White,
+		},
+
+		Secondary = {
+			Background = Theme.Primitives.Colors.Gray100,
+			Hover = Theme.Primitives.Colors.Gray200,
+			Pressed = Theme.Primitives.Colors.Gray300,
+			Text = Theme.Primitives.Colors.Gray900,
+		},
+
+		Ghost = {
+			Background = Theme.Primitives.Colors.White,
+			Hover = Theme.Primitives.Colors.Gray100,
+			Pressed = Theme.Primitives.Colors.Gray200,
+			Text = Theme.Primitives.Colors.Gray900,
+		},
+
+		Disabled = {
+			Background = Theme.Primitives.Colors.Gray100,
+			Text = Theme.Primitives.Colors.Gray400,
+		},
+	},
+
+	--* =========================
+	--* ⚠ STATUS
+	--* =========================
+	Status = {
+		Success = {
+			Text = Theme.Primitives.Colors.Green700,
+			Background = Theme.Primitives.Colors.Green100,
+		},
+
+		Warning = {
+			Text = Theme.Primitives.Colors.Primary700,
+			Background = Theme.Primitives.Colors.Primary100,
+		},
+
+		Error = {
+			Text = Theme.Primitives.Colors.Red700,
+			Background = Theme.Primitives.Colors.Red100,
+		},
+	},
+
+	--* =========================
+	--* 📏 SPACING ALIASES
+	--* =========================
+	Spacing = {
+		Section = Theme.Primitives.Spacing.XL,
+		Container = Theme.Primitives.Spacing.XS,
+		Component = Theme.Primitives.Spacing.MD,
+		Inline = Theme.Primitives.Spacing.SM,
+		Tight = Theme.Primitives.Spacing.XS,
+	},
+
+	--* =========================
+	--* 🔠 TYPOGRAPHY ROLES
+	--* =========================
+	Typography = {
+		Display = {
+			Font = Theme.Primitives.FontWeight.Bold,
+			Size = Theme.Primitives.FontSize.XXXL,
+		},
+
+		Heading = {
+			Font = Theme.Primitives.FontWeight.Semibold,
+			Size = Theme.Primitives.FontSize.XL,
+		},
+
+		Title = {
+			Font = Theme.Primitives.FontWeight.Semibold,
+			Size = Theme.Primitives.FontSize.LG,
+		},
+
+		Body = {
+			Font = Theme.Primitives.FontWeight.Regular,
+			Size = Theme.Primitives.FontSize.MD,
+		},
+
+		Caption = {
+			Font = Theme.Primitives.FontWeight.Regular,
+			Size = Theme.Primitives.FontSize.SM,
+		},
+
+		Button = {
+			Font = Theme.Primitives.FontWeight.Semibold,
+			Size = Theme.Primitives.FontSize.MD,
+		},
+	},
+
+	--* =========================
+	--* 🔘 RADIUS ROLES
+	--* =========================
+	Radius = {
+		Small = Theme.Primitives.Radius.SM,
+		Medium = Theme.Primitives.Radius.LG,
+		Large = Theme.Primitives.Radius.LG,
+		Round = Theme.Primitives.Radius.Pill,
+	},
+
+	--* =========================
+	--* 🌫 ELEVATION ROLES
+	--* =========================
+	Elevation = {
+		None = Theme.Primitives.Elevation.Level0,
+		Low = Theme.Primitives.Elevation.Level1,
+		Medium = Theme.Primitives.Elevation.Level3,
+		High = Theme.Primitives.Elevation.Level6,
+		Overlay = Theme.Primitives.Elevation.Level10,
+	},
+}
+
+Theme.Components = {
+	Pane = {
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = 0,
+
+		Elevation = Theme.Semantic.Elevation.Medium,
+		Color = Theme.Semantic.Surface.Base,
+		BorderSize = 0,
+		Transparency = 0,
+		Clips = false,
+
+		LayoutOrder = 0,
+		ZIndex = 0,
+		Visible = true,
+	},
+
+	ScrollPane = {
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = 0,
+
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		CanvasSize = UDim2.fromScale(0, 0),
+
+		Elevation = Theme.Semantic.Elevation.Medium,
+		Color = Theme.Semantic.Surface.Base,
+		BorderSize = 0,
+		Transparency = 1,
+		Clips = true,
+
+		ScrollBarThickness = 2,
+		ScrollBarColor = Theme.Semantic.Text.Primary,
+		ScrollBarTransparency = 0.5,
+
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Spacing = Theme.Semantic.Spacing.Container,
+		HorizontalAlignment = Enum.HorizontalAlignment.Left,
+		VerticalAlignment = Enum.VerticalAlignment.Top,
+		FillDirection = Enum.FillDirection.Vertical,
+		HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		VerticalFlex = Enum.UIFlexAlignment.None,
+		Wraps = false,
+
+		LayoutOrder = 0,
+		ZIndex = 0,
+		Visible = true,
+	},
+
+	Image = {
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = 0,
+
+		Color = Theme.Semantic.Surface.Base,
+		BorderSize = 0,
+		Transparency = 1,
+		Clips = false,
+
+		Image = "",
+		ImageColor = Theme.Primitives.Colors.White,
+		ImageTransparency = 0,
+		TileSize = UDim2.fromOffset(25, 25),
+		ScaleType = Enum.ScaleType.Stretch,
+		SliceCenter = Rect.new(0, 0, 0, 0),
+		SliceScale = 0,
+
+		LayoutOrder = 0,
+		Visible = true,
+	},
+
+	Text = {
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = 0,
+
+		Color = Theme.Semantic.Surface.Base,
+		BorderSize = 0,
+		Transparency = 0,
+		Clips = false,
+
+		Text = "",
+		Variant = "Body",
+		TextColor = Theme.Semantic.Text.Primary,
+		TextTransparency = 0,
+		RichText = false,
+
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextYAlignment = Enum.TextYAlignment.Center,
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+
+		LayoutOrder = 0,
+		ZIndex = 0,
+		Visible = true,
+	},
+
+	Button = {
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = 0,
+
+		Color = Theme.Semantic.Surface.Base,
+		BorderSize = 0,
+		Transparency = 0,
+		Clips = false,
+
+		Text = "",
+		Variant = "Body",
+		TextColor = Theme.Semantic.Text.Primary,
+		TextTransparency = 0,
+		RichText = false,
+
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextYAlignment = Enum.TextYAlignment.Center,
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+
+		LayoutOrder = 0,
+		ZIndex = 0,
+		Visible = true,
+	},
+
+	Divider = {
+		Vertical = false,
+
+		Length = UDim.new(0.8, 0),
+		Thickness = 2,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+
+		Color = Theme.Semantic.Text.Primary,
+		Radius = Theme.Semantic.Radius.Round,
+		BorderSize = 0,
+		Transparency = 0,
+
+		LayoutOrder = 0,
+		ZIndex = 0,
+		Visible = true,
+	},
+
+	Corner = {
+		Radius = Theme.Semantic.Radius.Medium,
+	},
+
+	Padding = {
+		HorizontalSpacing = Theme.Semantic.Spacing.Container,
+		VerticalSpacing = Theme.Semantic.Spacing.Container,
+	},
+
+	ListLayout = {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Spacing = Theme.Semantic.Spacing.Container,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		FillDirection = Enum.FillDirection.Vertical,
+		HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		VerticalFlex = Enum.UIFlexAlignment.Fill,
+		Wraps = false,
+	},
+}
+return Theme
+</file>
+
+</files>

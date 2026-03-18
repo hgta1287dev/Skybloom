@@ -3,19 +3,22 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
+      "SharedStartup": {
+        "$path": "src/startup/SharedStartup"
+      },
       "Shared": {
         "$className": "Folder",
         "Configs": {
           "$className": "Folder",
           "GlobalConfig": {
             "$path": "src/configs/GlobalConfig.luau"
-          },
-          "KnitMessageConfig": {
-            "$path": "src/configs/KnitMessageConfig.luau"
           }
         },
         "Core": {
           "$className": "Folder",
+          "HoenKnit": {
+            "$path": "src/core/HoenKnit.luau"
+          },
           "LoggerManager": {
             "$path": "src/core/LoggerManager"
           }
@@ -93,14 +96,14 @@
           },
           "CameraService": {
             "$className": "Folder",
+            "CameraModule": {
+              "$path": "src/services/CameraService/CameraModule.luau"
+            },
             "CameraRemote": {
               "$path": "src/services/CameraService/CameraRemote.luau"
             },
             "CameraServiceClient": {
               "$path": "src/services/CameraService/Client.luau"
-            },
-            "ExternalCameraService": {
-              "$path": "src/services/CameraService/ExternalCameraService.luau"
             }
           },
           "CharacterService": {
@@ -177,8 +180,8 @@
             "WindServiceClient": {
               "$path": "src/services/WindService/Client.luau"
             },
-            "WindShake": {
-              "$path": "src/services/WindService/WindShake"
+            "WindShakeModule": {
+              "$path": "src/services/WindService/WindShakeModule"
             }
           }
         },
@@ -206,11 +209,11 @@
       "Server": {
         "$path": "src/startup/Server.server.luau"
       },
+      "ServerStartup": {
+        "$path": "src/startup/ServerStartup"
+      },
       "ServerPackages": {
         "$path": "ServerPackages"
-      },
-      "ServerBootstrap": {
-        "$path": "src/startup/ServerBootstrap"
       },
       "Services": {
         "$className": "Folder",
@@ -274,11 +277,8 @@
         "Client": {
           "$path": "src/startup/Client.client.luau"
         },
-        "ClientBootstrap": {
-          "$path": "src/startup/ClientBootstrap"
-        },
-        "SharedBootstrap": {
-          "$path": "src/startup/SharedBootstrap"
+        "ClientStartup": {
+          "$path": "src/startup/ClientStartup"
         }
       }
     }

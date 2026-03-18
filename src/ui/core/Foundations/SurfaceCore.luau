@@ -109,7 +109,6 @@ function SurfaceCore.new(className: string, themeName: string)
 			})
 		end
 
-		print(frameProps)
 		return e(Primitive, frameProps, children)
 	end)
 end

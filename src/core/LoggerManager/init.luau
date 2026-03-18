@@ -8,6 +8,7 @@ LoggerManager.__index = LoggerManager
 export type LogLevelName = "Debug" | "Info" | "Warn" | "Error"
 export type LogLevel = number
 export type Handler = (level: LogLevel, message: string) -> ()
+export type Logger = Logger.Logger
 
 -- * Constants
 local IS_SERVER = RunService:IsServer()
@@ -27,6 +28,7 @@ function LoggerManager.new()
 	self._started = false
 	self._enabled = true
 	self._level = LogLevels.Info
+	self._loggers = {}
 	self._handlers = {}
 	self._buffer = {}
 
@@ -99,8 +101,20 @@ function LoggerManager:Init()
 end
 
 -- Logger Factory
-function LoggerManager:CreateLogger(scope: string?)
-	return Logger.new(self, SIDE_PREFIX, scope, LogLevels)
+function LoggerManager:CreateLogger(scope: string?): Logger
+	if scope and self._loggers[scope] then
+		return self._loggers[scope]
+	end
+
+	local logger = Logger.new(self, SIDE_PREFIX, scope, LogLevels)
+
+	if not scope then
+		logger._isTemporary = true
+		return logger
+	end
+
+	self._loggers[scope] = logger
+	return logger
 end
 
 return LoggerManager.new()

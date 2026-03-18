@@ -1,14 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LightingManager = require(script.Parent.LightingManager)
 local LightingPresets = require(script.Parent.LightingPresets)
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
-local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
 
-local Logger = LoggerManager:CreateLogger("LightingController")
-local LightingController = Knit.CreateController({
+local LightingController = HoenKnit.CreateController({
 	Name = "LightingController",
 })
+local Logger = LightingController._logger
 
 -- * Pulbic API
 function LightingController:SetPreset(name: string)
@@ -21,15 +19,8 @@ function LightingController:SetPreset(name: string)
 end
 
 -- * Knit API
-function LightingController:KnitInit()
-	Logger:Info(KnitMessageConfig.Initializing)
-	Logger:Info(KnitMessageConfig.Initialized)
-end
-
 function LightingController:KnitStart()
-	Logger:Info(KnitMessageConfig.Starting)
 	LightingManager:Apply(LightingPresets.Default)
-	Logger:Info(KnitMessageConfig.Started)
 end
 
 return LightingController

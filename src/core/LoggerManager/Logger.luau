@@ -3,6 +3,18 @@ Logger.__index = Logger
 
 --* Types
 export type LogLevel = number
+export type Logger = {
+	_scope: string,
+	_manager: any,
+	_prefix: string,
+	_levels: { [string]: number },
+
+	Debug: (self: Logger, ...any) -> string,
+	Info: (self: Logger, ...any) -> string,
+	Warn: (self: Logger, ...any) -> string,
+	Error: (self: Logger, ...any) -> string,
+	Format: (self: Logger, ...any) -> string,
+}
 
 --* Constructor
 function Logger.new(manager: any, sidePrefix: string, scope: string?, logLevels: { [string]: number })
@@ -12,6 +24,13 @@ function Logger.new(manager: any, sidePrefix: string, scope: string?, logLevels:
 		_prefix = sidePrefix,
 		_levels = logLevels,
 	}, Logger)
+end
+
+function Logger:Destroy()
+	self._manager._loggers[self._scope] = nil
+	self._manager = nil
+	table.clear(self)
+	setmetatable(self, nil)
 end
 
 --* Private
@@ -39,6 +58,10 @@ function Logger:_log(level: LogLevel, ...)
 end
 
 --* Public
+function Logger:Format(...)
+	return self:_format(...)
+end
+
 function Logger:Debug(...)
 	return self:_log(self._levels.Debug, ...)
 end

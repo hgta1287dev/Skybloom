@@ -1,13 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local KnitBootstrap = require(ReplicatedStorage.SharedStartup.KnitBootstrap)
+local LoggerBootstap = require(ReplicatedStorage.SharedStartup.LoggerBootstap)
+local ServiceLoader = require(ReplicatedStorage.SharedStartup.ServiceLoader)
 
--- * Logger Setup
-LoggerManager:Init()
-
--- * ECS Setup
--- ECS.AddSystemsDeep(ReplicatedStorage.Shared.Ecs.Systems)
--- ECS.AddSystemsDeep(ServerScriptService.Ecs.Systems)
--- ECS.Start()
-
--- * Knit Setup
+LoggerBootstap:Init()
+ServiceLoader:Init()
+KnitBootstrap:Init()
