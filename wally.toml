@@ -28,6 +28,7 @@ TableToBuffer = "secondnewtonlaw/tabletobuffer@0.1.5"
 OrderedCollections = "hgta1287dev/ordered-collections@1.0.0"
 RobloxStateMachine = "prooheckcp/robloxstatemachine@>0.0.0, <10.0.0"
 StateMachine = "hgta1287dev/guarded-state-machine@1.0.3"
+Iris = "sirmallard/iris@2.5.0"
 
 [server-dependencies]
 ProfileService = "firebird702/profileservice@1.1.0"

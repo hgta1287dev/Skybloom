@@ -5,5 +5,6 @@ local LoggerBootstap = require(ReplicatedStorage.SharedStartup.LoggerBootstap)
 local ServiceLoader = require(ReplicatedStorage.SharedStartup.ServiceLoader)
 
 LoggerBootstap:Init()
+
 ServiceLoader:Init()
 KnitBootstrap:Init()

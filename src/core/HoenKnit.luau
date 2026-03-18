@@ -9,33 +9,43 @@ local HoenKnit = {}
 
 -- * Types
 -- Knit
+type ServerMiddlewareFn = (player: Player, args: { any }) -> (boolean, ...any)
+type ServerMiddleware = { ServerMiddlewareFn }
+type Middleware = {
+	Inbound: ServerMiddleware?,
+	Outbound: ServerMiddleware?,
+}
 export type KnitServiceDef = {
 	Name: string,
-	Client: { [any]: any },
+	Client: { [any]: any }?,
+	Middleware: Middleware?,
+	[any]: any,
 }
 
 export type KnitControllerDef = {
 	Name: string,
 }
 
-export type KnitObject = {
+type KnitObject = {
 	Name: string,
 	[any]: any,
 }
 
 export type KnitController = KnitObject
-export type KnitServiceClient = {
+type KnitServiceClient = {
 	Server: KnitService,
 	[any]: any,
 }
 export type KnitService = {
+	Name: string,
 	Client: KnitServiceClient,
 	KnitComm: any,
+	[any]: any,
 } & KnitObject
 
 -- Hoen
-export type HoenObjectState = "Created" | "Initialized" | "Started" | "Destroyed"
-export type HoenObject = {
+type HoenObjectState = "Created" | "Initialized" | "Started" | "Destroyed"
+type HoenObject = {
 	Name: string,
 	_logger: LoggerManager.Logger,
 	_createTime: number,
@@ -77,7 +87,7 @@ local STATES = {
 
 local KEYS = {
 	Init = "KnitInit",
-	Start = "knitStart",
+	Start = "KnitStart",
 }
 
 HoenKnit.Keys = KEYS
@@ -122,6 +132,7 @@ local function setupLifecycle(object: KnitObject)
 
 	-- * Init
 	function object:KnitInit()
+		print(originalInit)
 		-- Error handling
 		if self._state ~= STATES.Create then
 			logger:Warn(errInvalidState(STATES.Create, self._state))
@@ -134,10 +145,13 @@ local function setupLifecycle(object: KnitObject)
 		-- Init
 		local st = os.clock()
 		local success, err = true, nil
+		warn(originalInit)
 		if typeof(originalInit) == "function" then
+			warn("PCALLLLL")
 			success, err = pcall(originalInit, self)
 		end
 
+		warn("NOTIFY")
 		if success then
 			self._state = STATES.Init
 			logger:Info(info(ACTIONS.Init, ACTION_STATES.Success, st))
@@ -148,6 +162,7 @@ local function setupLifecycle(object: KnitObject)
 
 	-- * Start
 	function object:KnitStart()
+		warn(originalStart)
 		if self._state ~= STATES.Init then
 			logger:Warn(errInvalidState(STATES.Init, self._state))
 			return
@@ -167,9 +182,22 @@ local function setupLifecycle(object: KnitObject)
 			self._state = STATES.Start
 			logger:Info(info(ACTIONS.Start, ACTION_STATES.Success, st))
 		else
-			error(logger:Format(info(ACTIONS.Start, ACTION_STATES.Started, st), err))
+			error(logger:Format(info(ACTIONS.Start, ACTION_STATES.Failed, st), err))
 		end
 	end
+
+	-- * Meta
+	setmetatable(object, {
+		__newindex = function(self, key, value)
+			if key == "KnitInit" then
+				originalInit = value
+			elseif key == "KnitStart" then
+				originalStart = value
+			else
+				rawset(self, key, value)
+			end
+		end,
+	})
 end
 
 -- * Public

@@ -5,7 +5,7 @@ registry = "test"
 [[package]]
 name = "asus/frame-pixelated"
 version = "0.1.0"
-dependencies = [["BufferUtil", "sleitnick/buffer-util@0.3.2"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Fusion", "elttob/fusion@0.3.0"], ["Janitor", "howmanysmall/janitor@1.18.3"], ["Knit", "sleitnick/knit@1.7.0"], ["Loader", "sleitnick/loader@1.0.3"], ["Matter", "matter-ecs/matter@0.8.5"], ["Networker", "leifstout/networker@0.3.1"], ["OrderedCollections", "hgta1287dev/ordered-collections@1.0.0"], ["OrderedSet", "hgta1287dev/ordered-set@1.2.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["RobloxStateMachine", "prooheckcp/robloxstatemachine@1.1.7"], ["Sift", "csqrl/sift@0.0.2"], ["Signal", "sleitnick/signal@2.0.3"], ["Silo", "sleitnick/silo@0.1.2"], ["StateMachine", "hgta1287dev/guarded-state-machine@1.0.3"], ["Streamable", "sleitnick/streamable@1.2.4"], ["Symbol", "sleitnick/symbol@2.0.1"], ["TableToBuffer", "secondnewtonlaw/tabletobuffer@0.1.5"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["ProfileService", "firebird702/profileservice@1.1.0"]]
+dependencies = [["BufferUtil", "sleitnick/buffer-util@0.3.2"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Fusion", "elttob/fusion@0.3.0"], ["Iris", "sirmallard/iris@2.5.0"], ["Janitor", "howmanysmall/janitor@1.18.3"], ["Knit", "sleitnick/knit@1.7.0"], ["Loader", "sleitnick/loader@1.0.3"], ["Matter", "matter-ecs/matter@0.8.5"], ["Networker", "leifstout/networker@0.3.1"], ["OrderedCollections", "hgta1287dev/ordered-collections@1.0.0"], ["OrderedSet", "hgta1287dev/ordered-set@1.2.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["RobloxStateMachine", "prooheckcp/robloxstatemachine@1.1.7"], ["Sift", "csqrl/sift@0.0.2"], ["Signal", "sleitnick/signal@2.0.3"], ["Silo", "sleitnick/silo@0.1.2"], ["StateMachine", "hgta1287dev/guarded-state-machine@1.0.3"], ["Streamable", "sleitnick/streamable@1.2.4"], ["Symbol", "sleitnick/symbol@2.0.1"], ["TableToBuffer", "secondnewtonlaw/tabletobuffer@0.1.5"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["ProfileService", "firebird702/profileservice@1.1.0"]]
 
 [[package]]
 name = "csqrl/sift"
@@ -155,6 +155,11 @@ dependencies = []
 [[package]]
 name = "secondnewtonlaw/tabletobuffer"
 version = "0.1.5"
+dependencies = []
+
+[[package]]
+name = "sirmallard/iris"
+version = "2.5.0"
 dependencies = []
 
 [[package]]

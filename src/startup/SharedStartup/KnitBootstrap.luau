@@ -6,10 +6,11 @@ local KnitBootstrap = {}
 local Logger = LoggerBootstap:GetLogger()
 
 function KnitBootstrap:Init()
-	Logger:Info(`Knit Starting!`)
+	task.wait(5)
+	warn(Logger:Format(`Knit Starting!`))
 	Knit.Start()
 		:andThen(function()
-			Logger:Info(`Knit Started Successfully!`)
+			warn(Logger:Format(`Knit Started Successfully!`))
 		end)
 		:catch(function(...)
 			error(Logger:Format(...))

@@ -16,6 +16,9 @@
         },
         "Core": {
           "$className": "Folder",
+          "HoenIris": {
+            "$path": "src/core/HoenIris.luau"
+          },
           "HoenKnit": {
             "$path": "src/core/HoenKnit.luau"
           },

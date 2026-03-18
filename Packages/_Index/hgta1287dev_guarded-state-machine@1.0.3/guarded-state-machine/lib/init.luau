@@ -1,5 +1,5 @@
-local Promise = require(script.Parent.Promise)
-local Signal = require(script.Parent.Signal)
+local Promise = require(script.Parent.Parent.Promise)
+local Signal = require(script.Parent.Parent.Signal)
 
 type Signal = typeof(Signal.new())
 type Promise = typeof(Promise.new())
