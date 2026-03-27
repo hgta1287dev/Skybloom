@@ -45,14 +45,14 @@ end
 -- * Knit
 function DevLogController:KnitInit()
 	LoggerManager:Init()
-	self:ToggleAutoCleaner(AUTOCLEAR) -- * Auto clear logs
+	self:ToggleAutoCleaner(AUTOCLEAR) --auto clear logs
 end
 
 function DevLogController:KnitStart()
 	local DevLogService = Knit.GetService("DevLogService")
 	DevLogService.MessageOut:Connect(function(_message: string, entryBuffer: buffer)
 		local entry = LoggerManager:DeserializeEntry(entryBuffer)
-		LoggerManager:Log(entry)
+		LoggerManager:Log(entry, false)
 	end)
 end
 

@@ -1,17 +1,17 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DevStates = require(script.Parent.DevStates)
 local Iris = require(ReplicatedStorage.Packages.Iris)
+local DevPanelState = require(ReplicatedStorage.Shared.Core.DevPanel.DevCommon.DevPanelState)
 
 local ControlPanel = {}
 
 function ControlPanel:Render()
-	Iris.Window({ "Control Panel" }, { isOpened = DevStates.ShowControllerPanel })
+	Iris.Window({ "Controller Panel" }, { isOpened = DevPanelState.ShowControllerPanel })
 	do
 		Iris.MenuBar()
 		do
 			Iris.Menu({ "Tools" })
 			do
-				Iris.MenuToggle({ "Output Console" }, { isChecked = DevStates.ShowOutputConsole })
+				Iris.MenuToggle({ "Console Panel" }, { isChecked = DevPanelState.ShowConsolePanel })
 			end
 			Iris.End()
 		end

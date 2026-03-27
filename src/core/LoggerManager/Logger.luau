@@ -29,6 +29,10 @@ local function getSidePrefix(): string
 	return string.upper(sidePrefix)
 end
 
+local function convertCategory(string): LogCategory
+	return string ~= nil and string or "None"
+end
+
 local function convertContent(...)
 	local parts = table.pack(...)
 	for i = 1, parts.n do
@@ -47,10 +51,10 @@ local function _entry(self: any, level: LogLevel, category: LogCategory?, ...): 
 		content = content,
 		level = level,
 		scope = self._scope,
-		category = category,
+		category = convertCategory(category),
 
 		_side = self._side,
-		_timestamp = DateTime.now(),
+		_timestamp = tostring(os.clock()),
 		_source = (level == "Trace" or level == "Debug" or level == "Error" or level == "Fatal") and source or nil,
 		_stack = (level == "Trace" or level == "Error" or level == "Fatal") and stack or nil, --? traceback here
 	}

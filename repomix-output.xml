@@ -32,7 +32,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: src/startup/ClientStartup/DevPanel
+- Only files matching these patterns are included: src/core/DevPanel
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -41,30 +41,428 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-src/startup/ClientStartup/DevPanel/DevControllerPanel.luau
-src/startup/ClientStartup/DevPanel/DevOutputConsole.luau
-src/startup/ClientStartup/DevPanel/DevStates.luau
-src/startup/ClientStartup/DevPanel/init.luau
+src/core/DevPanel/App.luau
+src/core/DevPanel/DevCommon/DevFilterManager.luau
+src/core/DevPanel/DevCommon/DevPanelState.luau
+src/core/DevPanel/DevConsole/DevConsole.luau
+src/core/DevPanel/DevConsole/DevConsolePanel.luau
+src/core/DevPanel/DevConsole/DevConsoleStates.luau
+src/core/DevPanel/DevController/DevControllerPanel.luau
+src/core/DevPanel/init.luau
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/startup/ClientStartup/DevPanel/DevControllerPanel.luau">
+<file path="src/core/DevPanel/App.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DevStates = require(script.Parent.DevStates)
+
+-- local DevConsolePanel = require(script.Parent.DevConsole.DevConsolePanel)
 local Iris = require(ReplicatedStorage.Packages.Iris)
+local DevPanelState = require(ReplicatedStorage.Shared.Core.DevPanel.DevCommon.DevPanelState)
+local DevConsole = require(ReplicatedStorage.Shared.Core.DevPanel.DevConsole.DevConsole)
+local DevConsolePanel = require(ReplicatedStorage.Shared.Core.DevPanel.DevConsole.DevConsolePanel)
+local DevControllerPanel = require(ReplicatedStorage.Shared.Core.DevPanel.DevController.DevControllerPanel)
+
+local DevPanel = {}
+
+function DevPanel:Init()
+	DevConsole:Init()
+
+	Iris.Init()
+	Iris:Connect(function()
+		if not DevPanelState.ShowControllerPanel:get() then
+			if Iris.Button({ "Open DevPanel" }):clicked() then
+				local target = not DevPanelState.ShowControllerPanel:get()
+				DevPanelState.ShowControllerPanel:set(target)
+			end
+		end
+
+		DevControllerPanel:Render()
+		DevConsolePanel:Render()
+	end)
+end
+
+return DevPanel
+</file>
+
+<file path="src/core/DevPanel/DevCommon/DevFilterManager.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+local OrderedCollections =
+	require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-collections@1.0.0"]["ordered-collections"])
+
+local Manager = {}
+Manager.__index = Manager
+
+-- * Types
+type Map<K, V> = OrderedCollections.Map<K, V>
+type State = typeof(Iris.State(true))
+
+export type StateName = string | "All"
+export type StateManagerDef = {
+	[string]: boolean,
+}
+export type StateManagerData = {
+	_states: Map<string, State>,
+	_masterState: State,
+
+	_updatingMaster: boolean,
+	_updatingNormal: boolean,
+}
+export type StateManager = typeof(setmetatable({} :: StateManagerData, Manager))
+
+-- * Constructor
+function Manager.new(def: StateManagerDef?): StateManager
+	-- * Define data
+	local data: StateManagerData = {
+		_states = OrderedCollections.Map.new(),
+		_masterState = Iris.State(true),
+
+		_updatingMaster = false,
+		_updatingNormal = false,
+	}
+
+	-- * Set metatable
+	local self = setmetatable(data, Manager) :: StateManager
+
+	-- * Define states
+	if def ~= nil then
+		for name, defaultValue in pairs(def) do
+			self:AddState(name, defaultValue)
+		end
+	end
+
+	-- * Bind
+	self._masterState:onChange(function()
+		self:_onMasterStateChange()
+	end)
+
+	return self
+end
+
+-- * Private Methods
+-- * Binding
+function Manager:_onMasterStateChange()
+	if self._updatingMaster then
+		return
+	end
+	self._updating = true
+
+	local masterState = self:GetMasterState()
+	self:EachState(function(name: string, state: State)
+		state:set(masterState:get())
+	end)
+
+	self._updating = false
+end
+
+-- * Public
+-- Each State
+function Manager:EachState(callback: (name: string, state: State) -> boolean?)
+	(self._states :: Map<string, State>):Each(callback)
+end
+
+-- State Getters
+function Manager:GetState(name: StateName): State?
+	if name == "All" then
+		return self:GetMasterState()
+	end
+	return self._states:Get(name)
+end
+
+function Manager:GetMasterState(): State
+	return self._masterState
+end
+
+-- State Mangement
+function Manager:AddState(name: StateName, defaultValue: boolean?): State
+	-- * Check if state already exists
+	local state = self:GetState(name)
+	if state then
+		return state
+	end
+
+	-- * Define state
+	state = Iris.State(defaultValue ~= nil and defaultValue or true)
+
+	-- * Add state
+	self._states:Set(name, state)
+
+	return state
+end
+
+return Manager
+</file>
+
+<file path="src/core/DevPanel/DevCommon/DevPanelState.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local States = {
+	ShowControllerPanel = Iris.State(true),
+	ShowConsolePanel = Iris.State(false),
+}
+
+return States
+</file>
+
+<file path="src/core/DevPanel/DevConsole/DevConsole.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LogSharedTypes = require(ReplicatedStorage.Shared.Core.LoggerManager.LogSharedTypes)
+
+local IrisTypes = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris.Types)
+local OrderedCollections =
+	require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-collections@1.0.0"]["ordered-collections"])
+local DevFilterManager = require(ReplicatedStorage.Shared.Core.DevPanel.DevCommon.DevFilterManager)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+-- * Types
+type Set<T> = OrderedCollections.Set<T>
+type State<T> = IrisTypes.State<T>
+
+type LogEntry = LogSharedTypes.LogEntry
+type LogLevel = LogSharedTypes.LogLevel
+type FilterManager = DevFilterManager.StateManager
+
+-- * Constants
+local MAX_LOGS = 300
+
+-- * Constructor
+local DevConsole = {
+	levelFilterManager = DevFilterManager.new() :: FilterManager,
+	categoryFilterManager = DevFilterManager.new() :: FilterManager,
+	entries = OrderedCollections.Set.new() :: OrderedCollections.Set<LogEntry>,
+}
+
+-- * Private
+-- Binding
+function DevConsole:_onMessageOut(entry: LogEntry)
+	self:Log(entry)
+end
+
+-- Update
+function DevConsole:_addToEntries(entry: LogEntry)
+	self.entries:PushFront(entry)
+	if self.entries:Size() > MAX_LOGS then
+		self.entries:PopBack()
+	end
+end
+
+-- * Public
+-- Pass through
+function DevConsole:Filter(entry: LogEntry): boolean
+	local levelState = self.levelFilterManager:GetState(entry.level)
+	if not levelState or not levelState:get() then
+		return false
+	end
+
+	local categoryState = self.categoryFilterManager:GetState(entry.category)
+	if not categoryState or not categoryState:get() then
+		return false
+	end
+
+	return true
+end
+
+-- Log Methods
+function DevConsole:Log(entry: LogEntry)
+	self:_addToEntries(entry)
+end
+
+function DevConsole:Clear()
+	self.entries:Clear()
+end
+
+-- Getters
+function DevConsole:GetEntriesSet(): Set<LogEntry>
+	return self.entries
+end
+
+function DevConsole:EachEntry(callback: (entry: LogEntry) -> boolean?)
+	self.entries:Each(callback)
+end
+
+-- Lifecycle
+function DevConsole:Init()
+	-- Bind MessageOut
+	LoggerManager:ConnectMessageOut(function(message: string, entryBuffer: buffer)
+		self:_onMessageOut(LoggerManager:DeserializeEntry(entryBuffer))
+	end)
+end
+
+return DevConsole
+</file>
+
+<file path="src/core/DevPanel/DevConsole/DevConsolePanel.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DevConsole = require(script.Parent.DevConsole)
+local DevConsoleStates = require(script.Parent.DevConsoleStates)
+local Iris = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris)
+local IrisTypes = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris.Types)
+local DevPanelState = require(ReplicatedStorage.Shared.Core.DevPanel.DevCommon.DevPanelState)
+local LogSharedTypes = require(ReplicatedStorage.Shared.Core.LoggerManager.LogSharedTypes)
+
+local OutputConsole = {}
+OutputConsole.__index = OutputConsole
+
+-- * Types
+type State<T> = IrisTypes.State<T>
+
+export type LogLevel = LogSharedTypes.LogLevel
+export type LogEntry = LogSharedTypes.LogEntry
+
+-- * Default Config
+local COLORS: { [LogLevel]: Color3 } = {
+	Trace = Color3.fromRGB(75, 20, 255),
+	Debug = Color3.fromRGB(100, 180, 255),
+	Info = Color3.fromRGB(255, 255, 255),
+	Warn = Color3.fromRGB(255, 160, 0),
+	Error = Color3.fromRGB(255, 50, 50),
+	Fatal = Color3.fromRGB(200, 0, 0),
+}
+
+-- * API
+-- Render
+function OutputConsole:Render()
+	Iris.Window({ "Console Panel" }, { isOpened = DevPanelState.ShowConsolePanel })
+	do
+		Iris.SeparatorText({ "Options" })
+		Iris.SameLine()
+		do
+			-- * Clear button
+			if Iris.Button({ "Clear" }).clicked() then
+				DevConsole:Clear()
+			end
+			-- * Search
+		end
+		Iris.End()
+
+		-- * Options Field
+		Iris.CollapsingHeader({ "Display Settings" })
+		do
+			Iris.Table({ 4 })
+			do
+				Iris.Checkbox({ "Show Date" }, { isChecked = DevConsoleStates.ShowDate })
+				Iris.NextColumn()
+				Iris.Checkbox({ "Show Run Side" }, { isChecked = DevConsoleStates.ShowRunSide })
+				Iris.NextColumn()
+				Iris.Checkbox({ "Show Run Scope" }, { isChecked = DevConsoleStates.ShowRunScope })
+				Iris.NextColumn()
+				Iris.Checkbox({ "Show Run Content" }, { isChecked = DevConsoleStates.ShowRunContent })
+			end
+			Iris.End()
+		end
+		Iris.End()
+
+		-- * Categories Filter Field
+		Iris.CollapsingHeader({ "Category filters" })
+		do
+			Iris.Table({ 4 })
+			do
+				-- * Filters "All"
+				Iris.Checkbox({ "All" }, { isChecked = DevConsole.categoryFilterManager:GetMasterState() })
+
+				-- * Other filters
+				local cnt = 0
+				DevConsole.categoryFilterManager:EachState(function(name: string, state: State<boolean>)
+					cnt += 1
+					if cnt % 2 == 0 then
+						Iris.NextColumn()
+					end
+					Iris.Checkbox({ name }, { isChecked = state })
+				end)
+			end
+			Iris.End()
+		end
+		Iris.End()
+
+		-- * Level Filters Field
+		Iris.CollapsingHeader({ "Level filters" })
+		do
+			Iris.Table({ 4 })
+			do
+				-- * Filters "All"
+				Iris.Checkbox({ "All" }, { isChecked = DevConsole.levelFilterManager:GetMasterState() })
+
+				-- * Other filters
+				local cnt = 0
+				DevConsole.levelFilterManager:EachState(function(name: string, state: State<boolean>)
+					cnt += 1
+					if cnt % 2 == 0 then
+						Iris.NextColumn()
+					end
+					Iris.Checkbox({ name }, { isChecked = state })
+				end)
+			end
+			Iris.End()
+		end
+		Iris.End()
+
+		-- * Output Field
+		Iris.SeparatorText({ "Output" })
+		Iris.Indent()
+		do
+			DevConsole:EachEntry(function(entry: LogEntry)
+				Iris.SameLine(5, nil, Enum.HorizontalAlignment.Left)
+				do
+					if DevConsoleStates.ShowDate:get() then
+						Iris.Text({ entry._timestamp:format("0000.2f") })
+						Iris.Separator()
+					end
+
+					if DevConsoleStates.ShowRunSide:get() then
+						Iris.Text({ string.upper(entry._side) })
+						Iris.Separator()
+					end
+
+					if DevConsoleStates.ShowRunScope:get() then
+						Iris.Text({ entry.scope })
+						Iris.Separator()
+					end
+
+					if DevConsoleStates.ShowRunContent:get() then
+						Iris.TextColored({ entry.content, COLORS[entry.level] })
+					end
+				end
+				Iris.End()
+			end)
+		end
+		Iris.End()
+	end
+	Iris.End()
+end
+
+return OutputConsole
+</file>
+
+<file path="src/core/DevPanel/DevConsole/DevConsoleStates.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+return {
+	ShowDate = Iris.State(true),
+	ShowRunSide = Iris.State(true),
+	ShowRunScope = Iris.State(true),
+	ShowRunContent = Iris.State(true),
+}
+</file>
+
+<file path="src/core/DevPanel/DevController/DevControllerPanel.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+local DevPanelState = require(ReplicatedStorage.Shared.Core.DevPanel.DevCommon.DevPanelState)
 
 local ControlPanel = {}
 
 function ControlPanel:Render()
-	Iris.Window({ "Control Panel" }, { isOpened = DevStates.ShowControllerPanel })
+	Iris.Window({ "Controller Panel" }, { isOpened = DevPanelState.ShowControllerPanel })
 	do
 		Iris.MenuBar()
 		do
 			Iris.Menu({ "Tools" })
 			do
-				Iris.MenuToggle({ "Output Console" }, { isChecked = DevStates.ShowOutputConsole })
+				Iris.MenuToggle({ "Console Panel" }, { isChecked = DevPanelState.ShowConsolePanel })
 			end
 			Iris.End()
 		end
@@ -76,304 +474,13 @@ end
 return ControlPanel
 </file>
 
-<file path="src/startup/ClientStartup/DevPanel/DevOutputConsole.luau">
-local LocalizationService = game:GetService("LocalizationService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Janitor = require(ReplicatedStorage.Packages.Janitor)
-local DevStates = require(script.Parent.DevStates)
-local Iris = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris)
-local IrisTypes = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris.Types)
-local OrderedCollections =
-	require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-collections@1.0.0"]["ordered-collections"])
-local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
-local LogSharedTypes = require(ReplicatedStorage.Shared.Core.LoggerManager.LogSharedTypes)
-
-local OutputConsole = {}
-OutputConsole.__index = OutputConsole
-
--- * Types
-type Set<T> = OrderedCollections.Set<T>
-type State<T> = IrisTypes.State<T>
-
-export type LogLevel = LogSharedTypes.LogLevel
-export type LogEntry = LogSharedTypes.LogEntry
-
-export type OutputConsoleData = {
-	MaxLog: number,
-	MaxOutput: number,
-	Colors: { [LogLevel]: Color3 },
-
-	_entries: Set<LogEntry>,
-	_filterStates: { [LogLevel]: State<boolean> },
-	_filterAllState: State<boolean>,
-	_fullFilterState: State<boolean>,
-
-	_showDate: State<boolean>,
-
-	_janitor: typeof(Janitor.new()),
-}
-export type OutputConsole = typeof(setmetatable({} :: OutputConsoleData, OutputConsole))
-
--- * Default Config
-local MAX_LOGS = 100000
-local MAX_OUTPUT = 200
-local Colors: { [LogLevel]: Color3 } = {
-	Trace = Color3.fromRGB(75, 20, 255),
-	Debug = Color3.fromRGB(100, 180, 255),
-	Info = Color3.fromRGB(255, 255, 255),
-	Warn = Color3.fromRGB(255, 160, 0),
-	Error = Color3.fromRGB(255, 50, 50),
-	Fatal = Color3.fromRGB(200, 0, 0),
-}
-
--- * Helpers
-local function eachLogLevel(callback: (level: LogLevel) -> ())
-	for _, level in ipairs(LogSharedTypes.LogLevelNames) do
-		callback(level)
-	end
-end
-
-function OutputConsole:_eachFilterStates(callback: (LogLevel: LogLevel, state: State<boolean>) -> ())
-	eachLogLevel(function(LogLevel: LogLevel)
-		callback(LogLevel, self._filterStates[LogLevel])
-	end)
-end
-
--- * Constructor
-function OutputConsole.new(): OutputConsole
-	local self = setmetatable(
-		{
-			MaxLog = MAX_LOGS,
-			MaxOutput = MAX_OUTPUT,
-			Colors = Colors,
-
-			_entries = OrderedCollections.Set.new(),
-
-			_filterStates = {},
-			_filterAllState = Iris.State(true),
-			_fullFilterState = Iris.State(true),
-
-			_showDate = Iris.State(true),
-			_showRunSide = Iris.State(true),
-			_showRunScope = Iris.State(true),
-			_showRunContent = Iris.State(true),
-
-			_janitor = Janitor.new(),
-		} :: OutputConsoleData,
-		OutputConsole
-	) :: OutputConsole
-
-	eachLogLevel(function(LogLevel: string)
-		self._filterStates[LogLevel] = Iris.State(true)
-	end)
-
-	LoggerManager:ConnectMessageOut(function(message: string, entryBuffer: buffer)
-		local entry = LoggerManager:DeserializeEntry(entryBuffer)
-		self:Log(entry)
-	end)
-
-	return self
-end
-
--- * API
-function OutputConsole:Test()
-	task.spawn(function()
-		local i = 0
-		while true do
-			eachLogLevel(function(LogLevel: LogLevel)
-				i += 1
-				self:SendMessage(`Test {LogLevel} {i}`, LogLevel)
-				task.wait(1)
-			end)
-		end
-	end)
-end
-
--- Message Methods
-function OutputConsole:Log(entry: LogEntry)
-	if self._entries:Size() >= self.MaxLog then
-		self._entries:PopBack()
-	end
-
-	self._entries:PushFront(entry)
-end
-
-function OutputConsole:Clear()
-	self._entries:Clear()
-end
-
--- Render
-function OutputConsole:Render()
-	Iris.Window({ "Output Console" }, { isOpened = DevStates.ShowOutputConsole })
-	do
-		Iris.SeparatorText({ "Options" })
-		Iris.SameLine()
-		do
-			-- * Clear button
-			if Iris.Button({ "Clear" }).clicked() then
-				self:Clear()
-			end
-			-- * Search
-		end
-		Iris.End()
-
-		-- * Options Field
-		Iris.CollapsingHeader({ "Display Settings" })
-		do
-			Iris.Table({ 4 })
-			do
-				Iris.Checkbox({ "Show Date" }, { isChecked = self._showDate })
-				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Side" }, { isChecked = self._showRunSide })
-				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Scope" }, { isChecked = self._showRunScope })
-				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Content" }, { isChecked = self._showRunContent })
-			end
-			Iris.End()
-		end
-		Iris.End()
-
-		-- * Filters Field
-		Iris.CollapsingHeader({ "Filters" })
-		do
-			Iris.Table({ 4 })
-			do
-				-- * Filters toggle
-				local function toggleAll(active: boolean)
-					self:_eachFilterStates(function(fType: LogLevel, state: State<boolean>)
-						state:set(active)
-					end)
-				end
-
-				local function updateAllState()
-					local allActive = true
-
-					self:_eachFilterStates(function(fType: LogLevel, state: State<boolean>)
-						if not state:get() then
-							allActive = false
-						end
-					end)
-
-					if self._fullFilterState:get() ~= allActive then
-						self._fullFilterState:set(allActive)
-					end
-				end
-
-				-- * Filters "All"
-				do
-					local checkbox = Iris.Checkbox({ "All" }, { isChecked = self._filterAllState })
-					local fullState = self._fullFilterState
-					local allState = self._filterAllState
-
-					if allState:changed() and checkbox:hovered() then
-						toggleAll(allState:get())
-					end
-
-					if self._fullFilterState:changed() then
-						allState:set(fullState:get())
-					end
-				end
-
-				-- * Other filters
-				local cnt = 0
-				self:_eachFilterStates(function(fType: LogLevel, state: State<boolean>)
-					cnt += 1
-					if cnt % 2 == 0 then
-						Iris.NextColumn()
-					end
-					Iris.Checkbox({ fType }, { isChecked = state })
-					if state:changed() then
-						updateAllState()
-					end
-				end)
-			end
-			Iris.End()
-		end
-		Iris.End()
-
-		-- * Output Field
-		Iris.SeparatorText({ "Output" })
-		Iris.Indent()
-		do
-			local outputs = 0
-			self._entries:Each(function(entry: LogEntry)
-				if self._filterAllState:get() or self._filterStates[entry.level]:get() then
-					Iris.SameLine(5, nil, Enum.HorizontalAlignment.Left)
-					do
-						if self._showDate:get() then
-							Iris.Text({
-								entry._timestamp:FormatLocalTime("HH:mm:ss.SSS", LocalizationService.RobloxLocaleId),
-							})
-							Iris.Separator()
-						end
-						if self._showRunSide:get() then
-							Iris.Text({ string.upper(entry._side) })
-							Iris.Separator()
-						end
-						if self._showRunScope:get() then
-							Iris.Text({ entry.scope })
-							Iris.Separator()
-						end
-						if self._showRunContent:get() then
-							Iris.TextColored({ entry.content, self.Colors[entry.level] })
-						end
-					end
-					Iris.End()
-
-					outputs += 1
-				end
-				return outputs <= self.MaxOutput
-			end)
-		end
-		Iris.End()
-	end
-	Iris.End()
-end
-
-return OutputConsole.new()
-</file>
-
-<file path="src/startup/ClientStartup/DevPanel/DevStates.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Iris = require(ReplicatedStorage.Packages.Iris)
-
-local States = {
-	ShowControllerPanel = Iris.State(true),
-	ShowOutputConsole = Iris.State(false),
-}
-
-return States
-</file>
-
-<file path="src/startup/ClientStartup/DevPanel/init.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local DevControllerPanel = require(script.DevControllerPanel)
-local DevOutputConsole = require(script.DevOutputConsole)
-local DevStates = require(script.DevStates)
-local Iris = require(ReplicatedStorage.Packages.Iris)
+<file path="src/core/DevPanel/init.luau">
+local App = require(script.App)
 
 local DevPanel = {}
 
 function DevPanel:Init()
-	Iris.Init()
-	Iris:Connect(function()
-		if DevStates.ShowControllerPanel:get() then
-			DevControllerPanel:Render()
-		else
-			if Iris.Button({ "Open DevConsole" }).clicked() then
-				DevStates.ShowControllerPanel:set(true)
-			end
-			return
-		end
-
-		if DevStates.ShowOutputConsole:get() then
-			DevOutputConsole:Render()
-		end
-	end)
-
-	-- DevOutputConsole:Test()
+	App:Init()
 end
 
 return DevPanel

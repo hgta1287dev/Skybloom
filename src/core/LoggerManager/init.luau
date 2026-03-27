@@ -42,11 +42,11 @@ end
 
 -- * Helper
 local function format(entry: LogEntry): string
-	local side = `[{string.upper(entry._side)}]`
+	-- local side = `[{string.upper(entry._side)}]` --! not used
 	local category = entry.category and `[{string.upper(entry.category)}]` or ""
 	local scope = entry.scope and `[{entry.scope}]` or ""
 	local content = entry.content
-	local message = `{side}{category}{scope}: {content}`
+	local message = `{category}{scope}: {content}`
 	return message
 end
 
@@ -93,7 +93,7 @@ function LoggerManager:SerializeEntry(entry: LogEntry): buffer
 		category = entry.category,
 		scope = entry.scope,
 		_side = entry._side,
-		_timestamp = entry._timestamp.UnixTimestampMillis,
+		_timestamp = entry._timestamp,
 		_source = entry._source,
 		_stack = entry._stack,
 	}
@@ -103,12 +103,11 @@ end
 function LoggerManager:DeserializeEntry(entryBuffer: buffer): LogEntry
 	local json = buffer.tostring(entryBuffer)
 	local data = HttpService:JSONDecode(json)
-	data._timestamp = DateTime.fromUnixTimestampMillis(data._timestamp)
 	return data
 end
 
 -- Log
-function LoggerManager:Log(entry: LogEntry): (string, LogEntry)
+function LoggerManager:Log(entry: LogEntry, output: boolean?): (string, LogEntry)
 	local message = format(entry)
 
 	if not self._enabled then
@@ -116,7 +115,9 @@ function LoggerManager:Log(entry: LogEntry): (string, LogEntry)
 		return message, entry
 	end
 
-	self:_output(message, entry.level)
+	if output ~= false then
+		self:_output(message, entry.level)
+	end
 
 	local bufferEntry = self:SerializeEntry(entry)
 	self.MessageOut:Fire(message, bufferEntry)
@@ -149,7 +150,7 @@ function LoggerManager:CreateLogger(scope: string?, key: string?): Logger
 		return self._loggers[id]
 	end
 
-	local logger = Logger.new(function(logEntry: LogSharedTypes.LogEntry): (string, LogEntry)
+	local logger = Logger.new(function(logEntry: LogEntry): (string, LogEntry)
 		return self:_dispatch(logEntry)
 	end, scope)
 

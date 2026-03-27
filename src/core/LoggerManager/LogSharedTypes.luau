@@ -1,6 +1,7 @@
 -- * Types
 export type LogCategory =
-	"System" -- init, lifecycle
+	"None"
+	| "System" -- init, lifecycle
 	| "Network" -- remote, http
 	| "Data" -- datastore
 	| "UI" -- interface
@@ -18,12 +19,12 @@ export type LogSide = "Server" | "Client"
 export type LogEntry = {
 	content: string,
 	level: LogLevel,
+	category: LogCategory,
 	scope: string?,
-	category: LogCategory?,
 	_side: LogSide,
 	_source: string?,
 	_stack: string?,
-	_timestamp: DateTime,
+	_timestamp: string,
 }
 
 export type LogFn = (self: any, categoryOrContent: LogCategory? | string, ...any) -> (string, LogEntry)
@@ -49,6 +50,7 @@ for name, value in Levels do
 end
 
 local Categories: { [LogCategory]: LogCategory } = {
+	None = "None",
 	System = "System",
 	Network = "Network",
 	Data = "Data",

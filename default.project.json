@@ -16,6 +16,9 @@
         },
         "Core": {
           "$className": "Folder",
+          "DevPanel": {
+            "$path": "src/core/DevPanel"
+          },
           "HoenKnit": {
             "$path": "src/core/HoenKnit"
           },
