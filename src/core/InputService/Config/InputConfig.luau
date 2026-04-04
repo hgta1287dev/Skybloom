@@ -36,6 +36,19 @@ function InputConfig.new(): { [string]: InputMapperTypes.ContextConfig }
 						},
 					},
 				},
+				ZoomDistance = {
+					Type = Enum.InputActionType.Direction1D,
+					Bindings = {
+						Keyboard = {
+							Up = Enum.KeyCode.I,
+							Down = Enum.KeyCode.O,
+						},
+						Mouse = {
+							Scale = 0.05,
+							KeyCode = Enum.KeyCode.MouseWheel,
+						},
+					},
+				},
 			},
 		},
 	}

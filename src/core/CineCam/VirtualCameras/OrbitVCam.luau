@@ -48,9 +48,14 @@ function OrbitVCam.new()
 
 	local mapper = InputService:GetActionMapper()
 	local lookAction: InputAction = mapper:GetAction("Gameplay", "Look")
+	local zoomDistanceAction: InputAction = mapper:GetAction("Gameplay", "ZoomDistance")
 
 	lookAction.StateChanged:Connect(function(direction: Vector2)
-		self.direction = direction
+		self.direction = direction * Vector2.new(1, -1)
+	end)
+
+	zoomDistanceAction.StateChanged:Connect(function(distance: number)
+		orbitModule.Distance:AdjustTarget(-distance)
 	end)
 
 	function self:_onUpdate()
