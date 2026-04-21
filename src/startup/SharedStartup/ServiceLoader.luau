@@ -9,7 +9,8 @@ local TEST = false
 
 --  * TESTING *
 local TEST_CONTROLLERS = {
-	"CloudLayerService",
+	-- "CloudLayerService",
+	"ECSService",
 }
 
 local TEST_SERVICES = {}

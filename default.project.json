@@ -146,11 +146,14 @@
               "GrowthComponent": {
                 "$path": "src/ecs/Components/Plants/GrowthComponent.luau"
               },
+              "PlantComponent": {
+                "$path": "src/ecs/Components/Plants/PlantComponent.luau"
+              },
+              "PlantEvents": {
+                "$path": "src/ecs/Components/Plants/PlantEvents.luau"
+              },
               "PlantNodeComponent": {
                 "$path": "src/ecs/Components/Plants/PlantNodeComponent.luau"
-              },
-              "PlantTagComponent": {
-                "$path": "src/ecs/Components/Plants/PlantTagComponent.luau"
               }
             },
             "TransformComponent": {
@@ -164,8 +167,8 @@
             "$className": "Folder",
             "Plants": {
               "$className": "Folder",
-              "Bush": {
-                "$path": "src/ecs/Factories/Plants/Bush.luau"
+              "BushFactory": {
+                "$path": "src/ecs/Factories/Plants/BushFactory.luau"
               }
             }
           },
@@ -174,13 +177,10 @@
             "Models": {
               "$className": "Folder",
               "ModelSystem": {
-                "$path": "src/ecs/Systems/Models/ModelSystem.luau"
-              }
-            },
-            "Nodes": {
-              "$className": "Folder",
-              "NodeSystem": {
-                "$path": "src/ecs/Systems/Nodes/NodeSystem.luau"
+                "$className": "Folder",
+                "ModelSystemClient": {
+                  "$path": "src/ecs/Systems/Models/ModelSystem/Client.luau"
+                }
               }
             },
             "TestSystem": {
@@ -193,6 +193,12 @@
         },
         "Services": {
           "$className": "Folder",
+          "AudioService": {
+            "$className": "Folder",
+            "AudioServiceClient": {
+              "$path": "src/services/AudioService/Client.luau"
+            }
+          },
           "CameraProxyService": {
             "$className": "Folder",
             "CameraProxyContainer": {
@@ -230,6 +236,12 @@
             "$className": "Folder",
             "DevLogServiceClient": {
               "$path": "src/services/DevLogService/Client.luau"
+            }
+          },
+          "ECSService": {
+            "$className": "Folder",
+            "ECSServiceClient": {
+              "$path": "src/services/ECSService/Client.luau"
             }
           },
           "GameStateService": {
@@ -367,6 +379,12 @@
             "$path": "src/services/DevLogService/Server.luau"
           }
         },
+        "ECSService": {
+          "$className": "Folder",
+          "ECSServiceServer": {
+            "$path": "src/services/ECSService/Server.luau"
+          }
+        },
         "GameStateService": {
           "$className": "Folder",
           "GameStateServiceServer": {
@@ -396,6 +414,15 @@
         "$className": "Folder",
         "Systems": {
           "$className": "Folder",
+          "Plants": {
+            "$className": "Folder",
+            "GrowthSystem": {
+              "$className": "Folder",
+              "GrowthSystemServer": {
+                "$path": "src/ecs/Systems/Plants/GrowthSystem/Server.luau"
+              }
+            }
+          },
           "TestSystem": {
             "$className": "Folder",
             "TestSystemServer": {

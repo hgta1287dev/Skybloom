@@ -32,7 +32,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: src/core/Sound/MusicSystem/init.luau
+- Only files matching these patterns are included: src/ecs
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -41,332 +41,357 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-src/core/Sound/MusicSystem/init.luau
+src/ecs/Components/ModelComponent.luau
+src/ecs/Components/Plants/GrowthComponent.luau
+src/ecs/Components/Plants/PlantNodeComponent.luau
+src/ecs/Components/Plants/PlantTagComponent.luau
+src/ecs/Components/TransformComponent.luau
+src/ecs/ECS.luau
+src/ecs/Factories/Plants/BushFactory.luau
+src/ecs/Systems/Models/ModelSystem/Client.luau
+src/ecs/Systems/Plants/GrowthSystem/Server.luau
+src/ecs/Systems/TestSystem/Client.luau
+src/ecs/Systems/TestSystem/Server.luau
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/core/Sound/MusicSystem/init.luau">
-local ContentProvider = game:GetService("ContentProvider")
+<file path="src/ecs/Factories/Plants/BushFactory.luau">
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Signal = require(ReplicatedStorage.Packages.Signal)
-local SoundController = require(script.Parent.SoundController)
 
-local MusicSystem = {}
-MusicSystem.__index = MusicSystem
+local ModelComponent = require(ReplicatedStorage.Shared.Ecs.Components.ModelComponent)
+local GrowthComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.GrowthComponent)
+local PlantNodeComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.PlantNodeComponent)
+local PlantTagComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.PlantTagComponent)
+local TransformComponent = require(ReplicatedStorage.Shared.Ecs.Components.TransformComponent)
 
-export type RepeatMode = "None" | "All" | "One"
+local BushFactory = {}
 
-local function onSongStarted(self)
-	self.SongStarted:Fire(self.currentTrack)
+export type BushProps = {
+	position: CFrame,
+	modelTemplate: Model,
+}
+
+function BushFactory.create(world, props: BushProps): number
+	local bushId = world:spawn(
+		PlantTagComponent(),
+		TransformComponent({
+			cframe = props.position,
+		}),
+		ModelComponent({
+			instance = props.modelTemplate:Clone(),
+		}),
+		GrowthComponent()
+	)
+
+	-- root node
+	world:spawn(
+		PlantNodeComponent({
+			parent = bushId,
+			depth = 0,
+			length = 1,
+		}),
+		TransformComponent({
+			cframe = props.position,
+		})
+	)
+
+	return bushId
 end
+</file>
 
-local function onSongEnded(self, token)
-	if self.playToken ~= token then
-		return
+<file path="src/ecs/Systems/Models/ModelSystem/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ModelComponent = require(ReplicatedStorage.Shared.Ecs.Components.ModelComponent)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+
+function System(world: ECS.World)
+	for id, model in world:query(ModelComponent) do
 	end
-	self.SongEnded:Fire(self.currentTrack)
-	self:Next()
 end
 
-function MusicSystem.new(soundController: any?)
-	local self = setmetatable({}, MusicSystem)
+return ECS.CreateSystem({
+	name = "ModelSystem",
+	system = System,
+})
+</file>
 
-	self.sound = soundController or SoundController
-	self.playlists = {}
-	self.stateMap = {}
-	self.queue = {}
+<file path="src/ecs/Systems/Plants/GrowthSystem/Server.luau">
+-- src/ecs/Systems/Plants/GrowthSystem/Server.luau
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-	self.currentPlaylistId = nil
-	self.currentIndex = 0
-	self.currentTrack = nil
-	self.currentSound = nil
-	self.currentState = nil
-	self.currentEndedConnection = nil
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+local GrowthComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.GrowthComponent)
+local PlantNodeComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.PlantNodeComponent)
+local TransformComponent = require(ReplicatedStorage.Shared.Ecs.Components.TransformComponent)
 
-	self.shuffle = false
-	self.repeatMode = "All"
-	self.playToken = 0
+local GROWTH_INTERVAL = 2
 
-	self.SongStarted = Signal.new()
-	self.SongEnded = Signal.new()
-	self.SongPaused = Signal.new()
-	self.SongResumed = Signal.new()
+local function spawnBranches(world, parentId: number, cframe: CFrame, stage: number)
+	local branchCount = if stage == 1 then 1 else if stage == 2 then 2 else 3
+	local branchLength = math.max(0.4, 1.2 * (0.75 ^ stage))
 
-	return self
-end
-
-function MusicSystem:Queue(track)
-	table.insert(self.queue, track)
-end
-
-function MusicSystem:GetCurrentTrack()
-	return self.currentTrack
-end
-
-function MusicSystem:SetStatePlaylist(state: string, playlistId: string)
-	self.stateMap[state] = playlistId
-end
-
-function MusicSystem:PreloadPlaylist(id: string)
-	local playlist = self.playlists[id]
-	if not playlist then
-		return
+	for i = 1, branchCount do
+		world:spawn(
+			PlantNodeComponent({
+				parent = parentId,
+				depth = stage,
+				length = branchLength,
+			}),
+			TransformComponent({
+				cframe = cframe,
+			})
+		)
 	end
+end
 
-	local preloadSounds = {}
-	for _, track in ipairs(playlist) do
-		local sound = self.sound.channels.Music:RequireSound(track) :: Sound
-		if not sound.IsLoaded then
-			table.insert(preloadSounds, sound)
+function System(world: ECS.World, state)
+	local dt = state.deltaTime or 0.016
+
+	for id, growth, transform in world:query(GrowthComponent, TransformComponent) do
+		growth.timer += dt
+		growth.age += dt
+
+		if growth.timer < GROWTH_INTERVAL then
+			continue
+		end
+
+		growth.timer -= GROWTH_INTERVAL
+
+		if growth.stage >= growth.maxStage then
+			continue
+		end
+
+		local nextStage = growth.stage + 1
+		world:replace(
+			id,
+			growth:patch({
+				stage = nextStage,
+			})
+		)
+
+		-- Spawn branches if we haven't already for this stage
+		if growth.lastSpawnStage < nextStage then
+			growth.lastSpawnStage = nextStage
+			spawnBranches(world, id, transform.cframe, nextStage)
 		end
 	end
-
-	ContentProvider:PreloadAsync(preloadSounds)
 end
 
-function MusicSystem:_disconnectEndedConnection()
-	if self.currentEndedConnection then
-		self.currentEndedConnection:Disconnect()
-		self.currentEndedConnection = nil
+return ECS.CreateSystem({
+	name = "GrowthSystem",
+	system = System,
+})
+</file>
+
+<file path="src/ecs/Components/ModelComponent.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+export type ModelComponent = {
+	instance: Model?,
+}
+return Matter.component("Model")
+</file>
+
+<file path="src/ecs/Components/Plants/GrowthComponent.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+
+export type GrowthData = {
+	age: number,
+	stage: number,
+	maxStage: number,
+	timer: number,
+	lastSpawnStage: number,
+}
+
+return Matter.component(
+	"Growth",
+	{
+		age = 0,
+		stage = 1,
+		maxStage = 3,
+		timer = 0,
+		lastSpawnStage = 0,
+	} :: GrowthData
+)
+</file>
+
+<file path="src/ecs/Components/Plants/PlantNodeComponent.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+
+export type PlantNodeData = {
+	parent: number?, -- entity id
+	depth: number,
+	length: number,
+}
+
+local PlantNode = Matter.component("PlantNode", {
+	parent = nil,
+	depth = 0,
+	length = 1,
+})
+
+return PlantNode
+</file>
+
+<file path="src/ecs/Components/Plants/PlantTagComponent.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+return Matter.component("PlantTag")
+</file>
+
+<file path="src/ecs/Components/TransformComponent.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+
+export type TransformData = { cframe: CFrame }
+return Matter.component("Transform", { cframe = CFrame.new() } :: TransformData)
+</file>
+
+<file path="src/ecs/Systems/TestSystem/Client.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+
+function System(world: ECS.World, state)
+	for id, health in world:query(Components.Model) do
+		if health.current < health.max then
+			world:replace(
+				id,
+				health:patch({
+					-- Regenerate 0.1% of maximum health per frame
+					current = math.min(health.max, health.current + (health.max * 0.001)),
+				})
+			)
+		end
 	end
 end
 
-function MusicSystem:AddPlaylist(id: string, tracks: { string })
-	self.playlists[id] = table.clone(tracks)
-end
+return ECS.CreateSystem({
+	name = "TestSytem",
+	system = System,
+})
+</file>
 
-function MusicSystem:RemovePlaylist(id: string)
-	if self.currentPlaylistId == id then
-		self:Stop()
+<file path="src/ecs/Systems/TestSystem/Server.luau">
+
+</file>
+
+<file path="src/ecs/ECS.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Matter = require(ReplicatedStorage.Packages._Index["matter-ecs_matter@0.8.5"].matter)
+
+export type World = Matter.World
+export type Loop = Matter.Loop
+
+export type System = {
+	system: (world: Matter.World, state: any) -> any,
+	priority: number,
+}
+
+type SystemDef = {
+	name: string,
+	system: (world: World, state: any) -> any,
+	priority: number?,
+}
+
+local ECS = {}
+ECS.world = Matter.World.new() :: World
+ECS.World = ECS.world :: World
+ECS.loop = Matter.Loop.new(ECS.world) :: Loop
+
+local container = {} :: { [string]: System }
+local started = false
+local loaded = {}
+
+function ECS.CreateSystem(systemDef: SystemDef): System
+	assert(type(systemDef) == "table", `System must be a table; got {type(systemDef)}`)
+	assert(type(systemDef.name) == "string", `System.Name must be a string; got {type(systemDef.name)}`)
+	assert(#systemDef.name > 0, "System.Name must be a non-empty string")
+	assert(not container[systemDef.name], `System {systemDef.name} already exists`)
+	assert(type(systemDef.system) == "function", `System.Update must be a function; got {type(systemDef.system)}`)
+	assert(not started, `Systems cannot be created after calling "ECS.Start()"`)
+
+	local system: System = {
+		system = systemDef.system,
+		priority = systemDef.priority or 0,
+	}
+	container[systemDef.name] = system
+
+	return system :: System
+end
+function ECS.Start()
+	assert(not started, "ECS has already started")
+
+	local loop = ECS.loop
+	local rawSystems = {}
+
+	for _, system: System in pairs(container) do
+		table.insert(rawSystems, system)
 	end
-	self.playlists[id] = nil
-end
 
-function MusicSystem:GetPlaylist(id: string): { string }?
-	return self.playlists[id]
-end
+	table.sort(rawSystems, function(a, b)
+		return a.priority < b.priority
+	end)
 
-function MusicSystem:SetShuffle(enabled: boolean)
-	self.shuffle = enabled
-end
+	local systemsList = {}
 
-function MusicSystem:ToggleShuffle()
-	self:SetShuffle(not self.shuffle)
-end
+	for i, sys in ipairs(rawSystems) do
+		systemsList[i] = sys.system
+	end
 
-function MusicSystem:SetRepeatMode(mode: RepeatMode)
-	self.repeatMode = mode
-end
+	started = true
+	loop:scheduleSystems(systemsList)
 
-function MusicSystem:ToggleRepeatMode()
-	if self.repeatMode == "None" then
-		self:SetRepeatMode("All")
-	elseif self.repeatMode == "All" then
-		self:SetRepeatMode("One")
+	if RunService:IsServer() then
+		loop:begin({
+			default = RunService.Heartbeat,
+			Heartbeat = RunService.Heartbeat,
+			RenderStepped = RunService.RenderStepped,
+			Stepped = RunService.Stepped,
+		})
 	else
-		self:SetRepeatMode("None")
+		loop:begin({
+			default = RunService.RenderStepped,
+			RenderStepped = RunService.RenderStepped,
+			Stepped = RunService.Stepped,
+		})
 	end
 end
 
-function MusicSystem:SetState(state: string)
-	self.currentState = state
+function ECS.AddSystems(parent: Instance)
+	assert(not started, `Systems cannot be added after calling "ECS.Start()"`)
 
-	local playlistId = self.stateMap[state]
-	if playlistId then
-		self:PlayPlaylist(playlistId)
-	end
-end
-
-function MusicSystem:PlayPlaylist(id: string, startIndex: number?)
-	local playlist = self.playlists[id]
-	if not playlist or #playlist == 0 then
-		warn(`Playlist {id} not found or empty`)
-		return
-	end
-
-	self.currentPlaylistId = id
-	self.currentIndex = math.clamp(startIndex or 1, 1, #playlist)
-
-	self:PlayCurrent()
-end
-
-function MusicSystem:PlayTrack(trackName: string)
-	self:_disconnectEndedConnection()
-
-	self.currentPlaylistId = nil
-	self.currentIndex = 0
-	self.currentTrack = trackName
-	self.currentSound = nil
-
-	self.playToken += 1
-	local token = self.playToken
-
-	local sound = self.sound:PlayMusic(trackName)
-	self.currentSound = sound
-
-	if sound and not sound.Looped then
-		self.currentEndedConnection = sound.Ended:Connect(function()
-			onSongEnded(self, token)
-		end)
-	end
-end
-
-function MusicSystem:IsPlaying(): boolean
-	return self.currentSound and self.currentSound.IsPlaying or false
-end
-
-function MusicSystem:Stop()
-	self.playToken += 1
-	self:_disconnectEndedConnection()
-
-	self.sound:CrossfadeMusic(self.currentTrack, nil, 1)
-	self.currentSound = nil
-	self.currentTrack = nil
-	self.currentPlaylistId = nil
-	self.currentIndex = 0
-end
-
-function MusicSystem:_getPlaylist()
-	if not self.currentPlaylistId then
-		return nil
-	end
-
-	return self.playlists[self.currentPlaylistId]
-end
-
-function MusicSystem:_pickNextIndex(playlist: { string }): number?
-	if #playlist == 0 then
-		return nil
-	end
-
-	if self.shuffle then
-		if #playlist == 1 then
-			return 1
+	for _, v in pairs(parent:GetChildren()) do
+		if not v:IsA("ModuleScript") then
+			continue
 		end
 
-		local nextIndex = math.random(1, #playlist)
-		if nextIndex == self.currentIndex then
-			nextIndex = (nextIndex % #playlist) + 1
+		require(v)
+	end
+end
+
+function ECS.AddSystemsDeep(parent: Instance)
+	for _, v in pairs(parent:GetDescendants()) do
+		if not v:IsA("ModuleScript") then
+			continue
 		end
-		return nextIndex
-	end
 
-	local nextIndex = self.currentIndex + 1
-	if nextIndex > #playlist then
-		if self.repeatMode == "All" then
-			return 1
+		if loaded[v] then
+			continue
 		end
-		return nil
-	end
 
-	return nextIndex
-end
-
-function MusicSystem:PlayCurrent()
-	local playlist = self:_getPlaylist()
-	if not playlist then
-		return
-	end
-
-	local trackName = playlist[self.currentIndex]
-	if not trackName then
-		return
-	end
-
-	self:_disconnectEndedConnection()
-
-	self.playToken += 1
-	local token = self.playToken
-	local previousTrack = self.currentTrack
-
-	local sound
-	if previousTrack then
-		sound = self.sound:CrossfadeMusic(previousTrack, trackName, 1)
-	else
-		sound = self.sound:PlayMusic(trackName)
-	end
-
-	self.currentTrack = trackName
-	self.currentSound = sound
-
-	if sound and not sound.Looped then
-		self.currentEndedConnection = sound.Ended:Connect(function()
-			onSongEnded(self, token)
-		end)
+		loaded[v] = true
+		require(v)
 	end
 end
-
-function MusicSystem:Next()
-	local playlist = self:_getPlaylist()
-	if not playlist then
-		return
-	end
-
-	local nextIndex = self:_pickNextIndex(playlist)
-	if not nextIndex then
-		if self.repeatMode == "One" and self.currentTrack then
-			self:PlayCurrent()
-		end
-		return
-	end
-
-	self.currentIndex = nextIndex
-	self:PlayCurrent()
-end
-
-function MusicSystem:Previous()
-	local playlist = self:_getPlaylist()
-	if not playlist then
-		return
-	end
-
-	local prevIndex = self.currentIndex - 1
-	if prevIndex < 1 then
-		if self.repeatMode == "All" then
-			prevIndex = #playlist
-		elseif self.repeatMode == "One" and self.currentTrack then
-			self:PlayCurrent()
-			return
-		else
-			prevIndex = 1
-		end
-	end
-
-	self.currentIndex = prevIndex
-	self:PlayCurrent()
-end
-
-function MusicSystem:Pause()
-	if self.currentSound then
-		self.currentSound:Pause()
-		self.SongPaused:Fire(self.currentTrack)
-	end
-end
-
-function MusicSystem:IsPaused()
-	return self.currentSound and not self.currentSound.IsPlaying
-end
-
-function MusicSystem:Resume()
-	if self.currentSound then
-		self.currentSound:Resume()
-		self.SongResumed:Fire(self.currentTrack)
-	end
-end
-
-function MusicSystem:TogglePause()
-	if self.currentSound then
-		if self.currentSound.IsPlaying then
-			self:Pause()
-		else
-			self:Resume()
-		end
-	end
-end
-
-return MusicSystem.new()
+return ECS
 </file>
 
 </files>
