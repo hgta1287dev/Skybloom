@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 
@@ -8,7 +9,7 @@ local ECSService = HoenKnit.CreateService({
 })
 
 function ECSService:KnitInit()
-	ECS.AddSystemsDeep(ReplicatedStorage.Shared.Ecs.Systems)
+	ECS.AddSystemsDeep(ServerScriptService.Ecs.Systems)
 end
 
 function ECSService:KnitStart()

@@ -17,6 +17,8 @@ type SystemDef = {
 	priority: number?,
 }
 
+local DEFAULT_PRIORITY = 10
+
 local ECS = {}
 ECS.world = Matter.World.new() :: World
 ECS.World = ECS.world :: World
@@ -36,7 +38,7 @@ function ECS.CreateSystem(systemDef: SystemDef): System
 
 	local system: System = {
 		system = systemDef.system,
-		priority = systemDef.priority or 0,
+		priority = systemDef.priority or DEFAULT_PRIORITY,
 	}
 	container[systemDef.name] = system
 

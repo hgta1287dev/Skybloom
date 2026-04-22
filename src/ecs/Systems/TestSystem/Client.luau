@@ -16,7 +16,7 @@ function System(world: ECS.World, state)
 	end
 end
 
-return ECS.CreateSystem({
-	name = "TestSytem",
-	system = System,
-})
+-- return ECS.CreateSystem({
+-- 	name = "TestSytem",
+-- 	system = System,
+-- })
