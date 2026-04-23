@@ -20,5 +20,6 @@ end
 return ECS.CreateSystem({
 	name = "HandlePlantGrow",
 	system = system,
+	after = "Growth",
 	priority = 1,
 })

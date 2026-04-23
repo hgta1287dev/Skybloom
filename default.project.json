@@ -168,15 +168,6 @@
                 "$path": "src/ecs/Systems/Core/EventCleanupSystem.luau"
               }
             },
-            "Model": {
-              "$className": "Folder",
-              "ModelSystem": {
-                "$className": "Folder",
-                "ModelSystemClient": {
-                  "$path": "src/ecs/Systems/Model/ModelSystem/Client.luau"
-                }
-              }
-            },
             "Struct": {
               "$className": "Folder",
               "SyncHierachy": {
@@ -414,6 +405,15 @@
         "$className": "Folder",
         "Systems": {
           "$className": "Folder",
+          "Model": {
+            "$className": "Folder",
+            "ModelSystem": {
+              "$className": "Folder",
+              "ModelSystemServer": {
+                "$path": "src/ecs/Systems/Model/ModelSystem/Server.luau"
+              }
+            }
+          },
           "Plant": {
             "$className": "Folder",
             "GrowthSystem": {

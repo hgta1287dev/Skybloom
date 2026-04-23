@@ -32,6 +32,6 @@ function System(world: ECS.World, state)
 end
 
 return ECS.CreateSystem({
-	name = "GrowthSystem",
+	name = "Growth",
 	system = System,
 })
