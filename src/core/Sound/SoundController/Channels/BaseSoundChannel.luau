@@ -33,7 +33,6 @@ function BaseChannel.new(name: string): BaseChannel
 		volume = 1,
 	}, BaseChannel) :: BaseChannel
 
-	self:Init()
 	return self
 end
 
