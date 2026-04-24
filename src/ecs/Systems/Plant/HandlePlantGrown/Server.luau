@@ -1,4 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local GrowthSystemServer = require(ServerScriptService.Ecs.Systems.Plant.GrowthSystem.GrowthSystemServer)
 local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
@@ -20,6 +22,6 @@ end
 return ECS.CreateSystem({
 	name = "HandlePlantGrow",
 	system = system,
-	after = "Growth",
+	after = { GrowthSystemServer },
 	priority = 1,
 })

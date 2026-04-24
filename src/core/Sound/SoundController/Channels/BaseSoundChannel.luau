@@ -19,21 +19,22 @@ export type BaseChannel = typeof(setmetatable(
 	BaseChannel
 ))
 
-function BaseChannel.new(): BaseChannel
+local function createGroup(name: string)
+	local group = Instance.new("SoundGroup")
+	group.Name = name
+	group.Parent = SoundService
+	return group
+end
+
+function BaseChannel.new(name: string): BaseChannel
 	local self = setmetatable({
-		group = Instance.new("SoundGroup"),
+		group = createGroup(name),
 		sounds = {},
 		volume = 1,
 	}, BaseChannel) :: BaseChannel
 
 	self:Init()
 	return self
-end
-
-function BaseChannel:Init()
-	self.group.Name = "BaseChannelGroup"
-	self.group.Parent = SoundService
-	self.group.Volume = 1
 end
 
 function BaseChannel:GetBaseVolume(name: string): number

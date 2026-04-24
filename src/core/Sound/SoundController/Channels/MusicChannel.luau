@@ -21,7 +21,7 @@ export type MusicChannel =
 type TweenInfoOption = TweenUtils.TweenInfoOption
 
 function MusicChannel.new(): MusicChannel
-	local self = BaseSoundChannel.new()
+	local self = BaseSoundChannel.new("Music")
 	setmetatable(self, MusicChannel)
 
 	self.currentName = nil

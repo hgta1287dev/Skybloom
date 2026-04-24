@@ -168,12 +168,6 @@
                 "$path": "src/ecs/Systems/Core/EventCleanupSystem.luau"
               }
             },
-            "Struct": {
-              "$className": "Folder",
-              "SyncHierachy": {
-                "$path": "src/ecs/Systems/Struct/SyncHierachy.luau"
-              }
-            },
             "TestSystem": {
               "$className": "Folder",
               "TestSystemClient": {
@@ -416,16 +410,25 @@
           },
           "Plant": {
             "$className": "Folder",
-            "GrowthSystem": {
+            "Growth": {
               "$className": "Folder",
-              "GrowthSystemServer": {
-                "$path": "src/ecs/Systems/Plant/GrowthSystem/Server.luau"
+              "GrowthServer": {
+                "$path": "src/ecs/Systems/Plant/Growth/Server.luau"
               }
             },
-            "HandlePlantGrownSystem": {
+            "HandlePlantGrown": {
               "$className": "Folder",
-              "HandlePlantGrownSystemServer": {
-                "$path": "src/ecs/Systems/Plant/HandlePlantGrownSystem/Server.luau"
+              "HandlePlantGrownServer": {
+                "$path": "src/ecs/Systems/Plant/HandlePlantGrown/Server.luau"
+              }
+            }
+          },
+          "Struct": {
+            "$className": "Folder",
+            "SyncHierachy": {
+              "$className": "Folder",
+              "SyncHierachyServer": {
+                "$path": "src/ecs/Systems/Struct/SyncHierachy/Server.luau"
               }
             }
           },

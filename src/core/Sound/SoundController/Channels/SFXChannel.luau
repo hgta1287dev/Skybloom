@@ -25,7 +25,7 @@ export type SFXChannel =
 	& BaseChannel
 
 function SFXChannel.new(): SFXChannel
-	local self = BaseSoundChannel.new()
+	local self = BaseSoundChannel.new("SFX")
 	setmetatable(self, SFXChannel)
 	self.activeSounds = {}
 	return self

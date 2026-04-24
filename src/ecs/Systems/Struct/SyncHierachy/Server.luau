@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local HierarchyComponent = require(ReplicatedStorage.Shared.Ecs.Components.Struct.HierarchyComponent)
+local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
 
@@ -12,7 +12,7 @@ local function isAncestor(world, ancestorId, nodeId)
 			return true
 		end
 
-		local hierarchy = world:get(current, HierarchyComponent)
+		local hierarchy = world:get(current, Components.Hierarchy)
 		if not hierarchy then
 			break
 		end
@@ -53,7 +53,7 @@ local function system(world: ECS.World)
 		local childId = event.child
 		local newParentId = event.newParent
 
-		local child = world:get(childId, HierarchyComponent)
+		local child = world:get(childId, Components.Hierarchy)
 		if not child then
 			discard(world, eventId)
 			continue
@@ -75,7 +75,7 @@ local function system(world: ECS.World)
 		end
 
 		-- get new parent once
-		local newParent = newParentId and world:get(newParentId, HierarchyComponent)
+		local newParent = newParentId and world:get(newParentId, Components.Hierarchy)
 
 		-- invalid parent
 		if newParentId and not newParent then
@@ -92,7 +92,7 @@ local function system(world: ECS.World)
 		end
 
 		if oldParentId then
-			local oldParent = world:get(oldParentId, HierarchyComponent)
+			local oldParent = world:get(oldParentId, Components.Hierarchy)
 			if oldParent then
 				world:insert(
 					oldParentId,
@@ -123,7 +123,7 @@ local function system(world: ECS.World)
 	end
 end
 
-ECS.CreateSystem({
+return ECS.CreateSystem({
 	name = "SyncHierarchy",
 	system = system,
 	priority = 2,

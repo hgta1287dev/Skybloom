@@ -1,4 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local SyncHierachyServer = require(ServerScriptService.Ecs.Systems.Struct.SyncHierachy.SyncHierachyServer)
 local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 
@@ -15,5 +17,5 @@ end
 return ECS.CreateSystem({
 	name = "ModelSystem",
 	system = System,
-	priority = 1,
+	before = { SyncHierachyServer },
 })

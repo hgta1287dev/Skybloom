@@ -41,16 +41,15 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-src/ecs/Components/ModelComponent.luau
-src/ecs/Components/Plants/GrowthComponent.luau
-src/ecs/Components/Plants/PlantComponent.luau
-src/ecs/Components/Plants/PlantEvents.luau
-src/ecs/Components/Plants/PlantNodeComponent.luau
-src/ecs/Components/TransformComponent.luau
+src/ecs/Components/Components.luau
 src/ecs/ECS.luau
+src/ecs/Events/Events.luau
 src/ecs/Factories/Plants/BushFactory.luau
-src/ecs/Systems/Models/ModelSystem/Client.luau
-src/ecs/Systems/Plants/GrowthSystem/Server.luau
+src/ecs/Systems/Core/EventCleanupSystem.luau
+src/ecs/Systems/Model/ModelSystem/Server.luau
+src/ecs/Systems/Plant/Growth/Server.luau
+src/ecs/Systems/Plant/HandlePlantGrown/Server.luau
+src/ecs/Systems/Struct/SyncHierachy/Server.luau
 src/ecs/Systems/TestSystem/Client.luau
 src/ecs/Systems/TestSystem/Server.luau
 </directory_structure>
@@ -58,42 +57,260 @@ src/ecs/Systems/TestSystem/Server.luau
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/ecs/Components/ModelComponent.luau">
+<file path="src/ecs/Systems/Plant/Growth/Server.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.Packages.Matter)
-export type ModelComponent = {
-	instance: Model?,
-}
-return Matter.component("Model")
+
+local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
+
+function System(world: ECS.World, state)
+	local dt = state.deltaTime or 0.016
+
+	for id, growth in world:query(Components.Plant.Growth) do
+		-- update age
+		growth:patch({
+			age = growth.age + dt,
+		})
+
+		-- check growth stage
+		if growth.stage >= growth.maxStage then
+			continue
+		end
+
+		-- update growth state
+		world:replace(
+			id,
+			growth:patch({
+				stage = growth.stage + 1,
+			})
+		)
+
+		-- fire grown event
+		Events.spawn(world, Events.Plant.Grown, { id = id })
+	end
+end
+
+return ECS.CreateSystem({
+	name = "Growth",
+	system = System,
+})
 </file>
 
-<file path="src/ecs/Components/Plants/PlantComponent.luau">
+<file path="src/ecs/Systems/Plant/HandlePlantGrown/Server.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.Packages.Matter)
+local ServerScriptService = game:GetService("ServerScriptService")
+local GrowthSystemServer = require(ServerScriptService.Ecs.Systems.Plant.GrowthSystem.GrowthSystemServer)
+local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
 
-export type PlantComponent = {
-	seed: number,
-}
+local function system(world: ECS.World, state)
+	for grownId, grown in world:query(Events.Plant.Grown):snapshot() do
+		-- * cleanup grown event
+		world:despawn(grownId)
 
-return Matter.component("Plant")
+		-- * collect data
+		local plantId = grown.id
+
+		-- * handle
+		-- change model
+		local model = world:get(plantId, Components.Model)
+	end
+end
+
+return ECS.CreateSystem({
+	name = "HandlePlantGrow",
+	system = system,
+	after = { GrowthSystemServer },
+	priority = 1,
+})
 </file>
 
-<file path="src/ecs/Components/Plants/PlantEvents.luau">
+<file path="src/ecs/Systems/Struct/SyncHierachy/Server.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.Packages.Matter)
-local PlantEvents = {
-	Grow = Matter.component("PlantGrow", {}),
-	SpawnBranch = Matter.component("SpawnBranch", {}),
-}
-return PlantEvents
+
+local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
+
+local function isAncestor(world, ancestorId, nodeId)
+	local current = nodeId
+
+	while current do
+		if current == ancestorId then
+			return true
+		end
+
+		local hierarchy = world:get(current, Components.Hierarchy)
+		if not hierarchy then
+			break
+		end
+
+		current = hierarchy.parent
+	end
+
+	return false
+end
+
+local function addChild(children, childId)
+	local newChildren = table.clone(children or {})
+
+	if not table.find(newChildren, childId) then
+		table.insert(newChildren, childId)
+	end
+
+	return newChildren
+end
+
+local function removeChild(children, childId)
+	local newChildren = table.clone(children or {})
+	local index = table.find(newChildren, childId)
+
+	if index then
+		table.remove(newChildren, index)
+	end
+
+	return newChildren
+end
+
+local function discard(world, eventId)
+	world:despawn(eventId)
+end
+
+local function system(world: ECS.World)
+	for eventId, event in world:query(Events.ParentChanged):snapshot() do
+		local childId = event.child
+		local newParentId = event.newParent
+
+		local child = world:get(childId, Components.Hierarchy)
+		if not child then
+			discard(world, eventId)
+			continue
+		end
+
+		local oldParentId = child.parent
+
+		-- no-op
+		if oldParentId == newParentId then
+			discard(world, eventId)
+			continue
+		end
+
+		-- self-parent
+		if newParentId == childId then
+			warn("Hierarchy: self-parent", childId)
+			discard(world, eventId)
+			continue
+		end
+
+		-- get new parent once
+		local newParent = newParentId and world:get(newParentId, Components.Hierarchy)
+
+		-- invalid parent
+		if newParentId and not newParent then
+			warn("Hierarchy: invalid parent", newParentId)
+			discard(world, eventId)
+			continue
+		end
+
+		-- cycle check
+		if newParentId and isAncestor(world, childId, newParentId) then
+			warn("Hierarchy: cycle detected", childId, newParentId)
+			discard(world, eventId)
+			continue
+		end
+
+		if oldParentId then
+			local oldParent = world:get(oldParentId, Components.Hierarchy)
+			if oldParent then
+				world:insert(
+					oldParentId,
+					oldParent:patch({
+						children = removeChild(oldParent.children, childId),
+					})
+				)
+			end
+		end
+
+		if newParent then
+			world:insert(
+				newParentId,
+				newParent:patch({
+					children = addChild(newParent.children, childId),
+				})
+			)
+		end
+
+		world:insert(
+			childId,
+			child:patch({
+				parent = newParentId,
+			})
+		)
+
+		discard(world, eventId)
+	end
+end
+
+return ECS.CreateSystem({
+	name = "SyncHierarchy",
+	system = system,
+	priority = 2,
+})
 </file>
 
-<file path="src/ecs/Components/TransformComponent.luau">
+<file path="src/ecs/Components/Components.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.Packages.Matter)
 
-export type TransformData = { cframe: CFrame }
-return Matter.component("Transform", { cframe = CFrame.new() } :: TransformData)
+return {
+	Hierarchy = Matter.component("Hierarchy", {
+		parent = nil :: number?,
+		children = {} :: { number },
+	}),
+
+	Model = Matter.component("Model", {
+		instance = nil :: Instance?,
+		parent = nil :: Instance?,
+	}),
+	Transform = Matter.component("Transform", { cframe = CFrame.new() :: CFrame }),
+
+	Plant = {
+		Tag = Matter.component("Plant"),
+		Growth = Matter.component("PlantGrowth", {
+			age = 0,
+			stage = 1,
+			maxStage = 3,
+			lastSpawnStage = 0,
+		}),
+	},
+}
+</file>
+
+<file path="src/ecs/Events/Events.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require(ReplicatedStorage.Packages.Matter)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+
+local Events = {
+	Event = Matter.component("Event"),
+	ParentChanged = Matter.component("ParentChanged", {
+		child = 0,
+		newParent = 0,
+	}),
+	Plant = {
+		Grown = Matter.component("PlantGrown", {
+			id = 0,
+		}),
+	},
+}
+
+function Events.spawn(world: ECS.World, component: any, data: any): number
+	return world:spawn(Events.Event(), component(data))
+end
+
+return Events
 </file>
 
 <file path="src/ecs/Factories/Plants/BushFactory.luau">
@@ -141,59 +358,51 @@ function BushFactory.create(world, props: BushProps): number
 end
 </file>
 
-<file path="src/ecs/Systems/Models/ModelSystem/Client.luau">
+<file path="src/ecs/Systems/Core/EventCleanupSystem.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ModelComponent = require(ReplicatedStorage.Shared.Ecs.Components.ModelComponent)
+local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
+local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
+
+local function system(world: ECS.World)
+	for eventId, _ in world:query(Events.Event):snapshot() do
+		print(`destroying event {eventId}`)
+		world:despawn(eventId)
+	end
+end
+
+return ECS.CreateSystem({
+	name = "EventCleanup",
+	system = system,
+	priority = math.huge,
+})
+</file>
+
+<file path="src/ecs/Systems/Model/ModelSystem/Server.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local SyncHierachyServer = require(ServerScriptService.Ecs.Systems.Struct.SyncHierachy.SyncHierachyServer)
+local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 
 function System(world: ECS.World)
-	for id, model in world:query(ModelComponent) do
+	for id, model in world:query(Components.Model) do
+		if not model.instance then
+			warn("Model instance is nil")
+		end
+
+		model.instance.Parent = model.parent
 	end
 end
 
 return ECS.CreateSystem({
 	name = "ModelSystem",
 	system = System,
+	before = { SyncHierachyServer },
 })
 </file>
 
-<file path="src/ecs/Systems/Plants/GrowthSystem/Server.luau">
--- src/ecs/Systems/Plants/GrowthSystem/Server.luau
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+<file path="src/ecs/Systems/TestSystem/Server.luau">
 
-local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
-local GrowthComponent = require(ReplicatedStorage.Shared.Ecs.Components.Plants.GrowthComponent)
-
-function System(world: ECS.World, state)
-	local dt = state.deltaTime or 0.016
-
-	for id, growth in world:query(GrowthComponent) do
-		growth.age += dt
-
-		if growth.stage >= growth.maxStage then
-			continue
-		end
-
-		local nextStage = growth.stage + 1
-		world:replace(
-			id,
-			growth:patch({
-				stage = nextStage,
-			})
-		)
-
-		-- Spawn branches if we haven't already for this stage
-		if growth.lastSpawnStage < nextStage then
-			growth.lastSpawnStage = nextStage
-			growth.growing = true
-		end
-	end
-end
-
-return ECS.CreateSystem({
-	name = "GrowthSystem",
-	system = System,
-})
 </file>
 
 <file path="src/ecs/Systems/TestSystem/Client.luau">
@@ -215,48 +424,10 @@ function System(world: ECS.World, state)
 	end
 end
 
-return ECS.CreateSystem({
-	name = "TestSytem",
-	system = System,
-})
-</file>
-
-<file path="src/ecs/Systems/TestSystem/Server.luau">
-
-</file>
-
-<file path="src/ecs/Components/Plants/GrowthComponent.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.Packages.Matter)
-
-export type GrowthComponent = {
-	age: number,
-	stage: number,
-	maxStage: number,
-	timer: number,
-	lastSpawnStage: number,
-	growing: boolean,
-}
-
-return Matter.component(
-	"Growth",
-	{
-		age = 0,
-		stage = 1,
-		maxStage = 3,
-		lastSpawnStage = 0,
-		growing = false,
-	} :: GrowthComponent
-)
-</file>
-
-<file path="src/ecs/Components/Plants/PlantNodeComponent.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.Packages.Matter)
-export type PlantNodeComponent = {
-	parent: number?,
-}
-return Matter.component("PlantNode")
+-- return ECS.CreateSystem({
+-- 	name = "TestSytem",
+-- 	system = System,
+-- })
 </file>
 
 <file path="src/ecs/ECS.luau">
@@ -268,16 +439,28 @@ local Matter = require(ReplicatedStorage.Packages._Index["matter-ecs_matter@0.8.
 export type World = Matter.World
 export type Loop = Matter.Loop
 
+export type Dependency = string | { name: string }
+
 export type System = {
-	system: (world: Matter.World, state: any) -> any,
+	name: string,
+	system: (world: World, state: any) -> (),
 	priority: number,
+	event: string?,
+	after: { Dependency }?,
+	before: { Dependency }?,
+	order: number, -- internal stable ordering
 }
 
-type SystemDef = {
+export type SystemDef = {
 	name: string,
-	system: (world: World, state: any) -> any,
+	system: (world: World, state: any) -> (),
 	priority: number?,
+	event: string?,
+	after: { Dependency }?,
+	before: { Dependency }?,
 }
+
+local DEFAULT_PRIORITY = 0
 
 local ECS = {}
 ECS.world = Matter.World.new() :: World
@@ -286,7 +469,80 @@ ECS.loop = Matter.Loop.new(ECS.world) :: Loop
 
 local container = {} :: { [string]: System }
 local started = false
-local loaded = {}
+local nextOrder = 0
+
+local loaded = setmetatable({}, { __mode = "k" })
+local loading = setmetatable({}, { __mode = "k" })
+
+local function getDepName(dep: any): string
+	if type(dep) == "string" then
+		return dep
+	end
+
+	assert(type(dep) == "table", `Invalid dependency type: {type(dep)}`)
+	assert(type(dep.name) == "string", "Invalid system reference: missing .name")
+	return dep.name
+end
+
+local function resolveDependency(dep: Dependency, systemMap: { [string]: System }, owner: System): System
+	local depName = getDepName(dep)
+	local target = systemMap[depName]
+	assert(target, `System {depName} not found (required by {owner.name})`)
+	return target
+end
+
+local function addUnique(list: { System }, system: System)
+	for _, existing in ipairs(list) do
+		if existing == system then
+			return
+		end
+	end
+
+	table.insert(list, system)
+end
+
+local function sortByLoadOrder(a: System, b: System): boolean
+	if a.order == b.order then
+		return a.name < b.name
+	end
+	return a.order < b.order
+end
+
+local function collectModules(parent: Instance, deep: boolean): { ModuleScript }
+	local result = {} :: { ModuleScript }
+	local source = if deep then parent:GetDescendants() else parent:GetChildren()
+
+	for _, inst in ipairs(source) do
+		if inst:IsA("ModuleScript") then
+			table.insert(result, inst)
+		end
+	end
+
+	table.sort(result, function(a, b)
+		return a:GetFullName() < b:GetFullName()
+	end)
+
+	return result
+end
+
+local function loadModule(mod: ModuleScript)
+	if loaded[mod] then
+		return
+	end
+
+	assert(not loading[mod], `Circular module dependency detected while loading {mod:GetFullName()}`)
+	loading[mod] = true
+
+	local ok, result = pcall(require, mod)
+	loading[mod] = nil
+
+	if not ok then
+		error(result, 2)
+	end
+
+	loaded[mod] = true
+	return result
+end
 
 function ECS.CreateSystem(systemDef: SystemDef): System
 	assert(type(systemDef) == "table", `System must be a table; got {type(systemDef)}`)
@@ -297,47 +553,84 @@ function ECS.CreateSystem(systemDef: SystemDef): System
 	assert(not started, `Systems cannot be created after calling "ECS.Start()"`)
 
 	local system: System = {
+		name = systemDef.name,
 		system = systemDef.system,
-		priority = systemDef.priority or 0,
+		priority = systemDef.priority or DEFAULT_PRIORITY,
+		event = systemDef.event,
+		after = systemDef.after,
+		before = systemDef.before,
+		order = nextOrder,
 	}
-	container[systemDef.name] = system
 
-	return system :: System
+	nextOrder += 1
+	container[systemDef.name] = system
+	return system
 end
+
 function ECS.Start()
 	assert(not started, "ECS has already started")
 
-	local loop = ECS.loop
-	local rawSystems = {}
+	local all = {} :: { System }
+	for _, system in pairs(container) do
+		table.insert(all, system)
+	end
+	table.sort(all, sortByLoadOrder)
 
-	for _, system: System in pairs(container) do
-		table.insert(rawSystems, system)
+	local systemMap = {} :: { [string]: System }
+	for _, sys in ipairs(all) do
+		assert(not systemMap[sys.name], `Duplicate system name: {sys.name}`)
+		systemMap[sys.name] = sys
 	end
 
-	table.sort(rawSystems, function(a, b)
-		return a.priority < b.priority
-	end)
+	-- Normalize all `after` deps to actual system refs first.
+	for _, sys in ipairs(all) do
+		local normalizedAfter = {} :: { System }
 
-	local systemsList = {}
+		if sys.after then
+			for _, dep in ipairs(sys.after) do
+				local target = resolveDependency(dep, systemMap, sys)
+				assert(target ~= sys, `System {sys.name} cannot depend on itself`)
+				addUnique(normalizedAfter, target)
+			end
+		end
 
-	for i, sys in ipairs(rawSystems) do
-		systemsList[i] = sys.system
+		sys.after = normalizedAfter
 	end
+
+	-- Convert `before` into extra `after` edges on the target systems.
+	for _, sys in ipairs(all) do
+		if sys.before then
+			for _, dep in ipairs(sys.before) do
+				local target = resolveDependency(dep, systemMap, sys)
+				assert(target ~= sys, `System {sys.name} cannot depend on itself`)
+				addUnique(target.after or {}, sys)
+				target.after = target.after or {}
+			end
+		end
+	end
+
+	-- Clear `before` since Matter only schedules `after`.
+	for _, sys in ipairs(all) do
+		sys.before = nil
+	end
+
+	-- Let Matter do the actual scheduling/sorting.
+	ECS.loop:setWorlds({ ECS.world })
+	ECS.loop:scheduleSystems(all)
 
 	started = true
-	loop:scheduleSystems(systemsList)
 
 	if RunService:IsServer() then
-		loop:begin({
+		ECS.loop:begin({
 			default = RunService.Heartbeat,
 			Heartbeat = RunService.Heartbeat,
-			RenderStepped = RunService.RenderStepped,
 			Stepped = RunService.Stepped,
 		})
 	else
-		loop:begin({
+		ECS.loop:begin({
 			default = RunService.RenderStepped,
 			RenderStepped = RunService.RenderStepped,
+			Heartbeat = RunService.Heartbeat,
 			Stepped = RunService.Stepped,
 		})
 	end
@@ -346,29 +639,19 @@ end
 function ECS.AddSystems(parent: Instance)
 	assert(not started, `Systems cannot be added after calling "ECS.Start()"`)
 
-	for _, v in pairs(parent:GetChildren()) do
-		if not v:IsA("ModuleScript") then
-			continue
-		end
-
-		require(v)
+	for _, mod in ipairs(collectModules(parent, false)) do
+		loadModule(mod)
 	end
 end
 
 function ECS.AddSystemsDeep(parent: Instance)
-	for _, v in pairs(parent:GetDescendants()) do
-		if not v:IsA("ModuleScript") then
-			continue
-		end
+	assert(not started, `Systems cannot be added after calling "ECS.Start()"`)
 
-		if loaded[v] then
-			continue
-		end
-
-		loaded[v] = true
-		require(v)
+	for _, mod in ipairs(collectModules(parent, true)) do
+		loadModule(mod)
 	end
 end
+
 return ECS
 </file>
 
