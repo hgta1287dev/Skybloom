@@ -6,7 +6,7 @@ local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
 local Logger = LoggerManager:CreateLogger(script.Name, "System")
 
-local SERVER_ROOT = ServerScriptService.Services
+local SERVER_ROOT = RunService:IsServer() and ServerScriptService.Services
 local CLIENT_ROOT = ReplicatedStorage.Shared.Services
 
 -- * Loader
@@ -76,10 +76,8 @@ end
 function ServiceLoader:Init()
 	Logger:Debug("System", "Initialization Started!")
 
-	if ServiceLoaderConfig.Testing and RunService:IsStudio() then
-		AutoLoad(ServiceLoaderConfig.Test)
-	else
-		AutoLoad(ServiceLoaderConfig.Main)
+	for _, config in ipairs(ServiceLoaderConfig.Actives) do
+		AutoLoad(config)
 	end
 
 	Logger:Debug("Initialization Completed!")

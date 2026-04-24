@@ -7,16 +7,30 @@ export type LoaderConfig = {
 
 -- * Constant
 local Configs = {
-	Testing = false,
-	Main = {
+	Dev = {
 		Common = {
 			"DevLogService",
+		},
+		Client = {},
+		Server = {},
+	},
+	Test = {
+		Common = {
+			"TestService",
+			"ECSService",
+			-- "CloudLayerService",
 			-- "CameraProxyService",
-			"MapService",
 			-- "WindService",
-			-- "TestService",
 			-- "RoomService",
 			-- "CharacterService",
+		},
+		Client = {},
+		Server = {},
+	},
+
+	Main = {
+		Common = {
+			"MapService",
 		},
 		Client = {
 			"CameraService",
@@ -24,16 +38,16 @@ local Configs = {
 		},
 		Server = {},
 	},
-
-	Test = {
-		Common = {
-			"TestService",
-			"ECSService",
-			-- "CloudLayerService",
-		},
-		Client = {},
-		Server = {},
-	},
 }
 
-return Configs
+-- * Config
+local Actives = {
+	Configs.Dev,
+	Configs.Test,
+	Configs.Main,
+}
+
+return {
+	Configs = Configs,
+	Actives = Actives,
+}
