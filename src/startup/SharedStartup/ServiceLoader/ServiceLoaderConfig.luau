@@ -24,7 +24,9 @@ local Configs = {
 			-- "RoomService",
 			-- "CharacterService",
 		},
-		Client = {},
+		Client = {
+			"AudioService",
+		},
 		Server = {},
 	},
 

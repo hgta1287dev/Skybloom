@@ -3,7 +3,6 @@ local RunService = game:GetService("RunService")
 local Settings = require(script.Settings)
 local VectorMap = require(script.VectorMap)
 
-local COLLECTION_TAG = "WindShake"
 local RENDER_NAME = "WindSystemRender"
 local RENDER_PRIORITY = Enum.RenderPriority.Last.Value + 1000
 
@@ -22,6 +21,7 @@ local PausedEvent = Instance.new("BindableEvent")
 local ResumedEvent = Instance.new("BindableEvent")
 
 local WindShake = {
+	CollectionTag = "WindShake",
 	RenderDistance = 100,
 	MaxRefreshRate = 1 / 60,
 	SharedSettings = Settings.new(script),
@@ -284,13 +284,13 @@ function WindShake:Init(config: { MatchWorkspaceWind: boolean? }?)
 	self.Initialized = true
 
 	-- Wire up tag listeners.
-	local windShakeAdded = CollectionService:GetInstanceAddedSignal(COLLECTION_TAG)
+	local windShakeAdded = CollectionService:GetInstanceAddedSignal(self.CollectionTag)
 	self.AddedConnection = self:Connect("AddObjectShake", windShakeAdded)
 
-	local windShakeRemoved = CollectionService:GetInstanceRemovedSignal(COLLECTION_TAG)
+	local windShakeRemoved = CollectionService:GetInstanceRemovedSignal(self.CollectionTag)
 	self.RemovedConnection = self:Connect("RemoveObjectShake", windShakeRemoved)
 
-	for _, object in CollectionService:GetTagged(COLLECTION_TAG) do
+	for _, object in CollectionService:GetTagged(self.CollectionTag) do
 		self:AddObjectShake(object)
 	end
 

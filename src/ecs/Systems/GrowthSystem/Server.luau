@@ -1,28 +1,30 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Matter = require(ReplicatedStorage.Packages.Matter)
 local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 local Events = require(ReplicatedStorage.Shared.Ecs.Events.Events)
 
 function System(world: ECS.World, state)
-	local dt = state.deltaTime or 0.016
+	local dt = Matter.useDeltaTime()
+	for eventId, stateChanged in world:query(Events.Plant.GrownStateChanged) do
+		local oldState = stateChanged.oldState
+		local newState = stateChanged.newState
+		
+		local id = stateChanged.id
+		local growth = world:get(stateChanged.id, Components.Plant.Growth)
 
-	for id, growth in world:query(Components.Plant.Growth) do
-		-- update age
-		growth:patch({
-			age = growth.age + dt,
-		})
+		-- final age
+		local targetState = math.clamp(newState, 0, growth.maxAge)
 
-		-- check growth stage
-		if growth.stage >= growth.maxStage then
-			continue
-		end
-
+		-- check should change
+		if targetState == oldState then continue end
+		
 		-- update growth state
 		world:replace(
 			id,
 			growth:patch({
-				stage = growth.stage + 1,
+				stage = targetState,
 			})
 		)
 

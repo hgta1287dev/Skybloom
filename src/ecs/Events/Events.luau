@@ -9,6 +9,14 @@ local Events = {
 		newParent = 0,
 	}),
 	Plant = {
+		AppliedWindShake = Matter.component("AppliedWindShake", {
+			id = 0,
+		}),
+		GrownStateChanged = Matter.component("PlantGrownStateChanged", {
+			id = 0,
+			oldState = 0,
+			newState = 0,
+		}),
 		Grown = Matter.component("PlantGrown", {
 			id = 0,
 		}),

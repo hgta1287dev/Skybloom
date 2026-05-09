@@ -14,12 +14,17 @@ return {
 	Transform = Matter.component("Transform", { cframe = CFrame.new() :: CFrame }),
 
 	Plant = {
-		Tag = Matter.component("Plant"),
-		Growth = Matter.component("PlantGrowth", {
+		Plant = Matter.component("Plant",{
+			plantType = "None",
+		}),
+		Tag = Matter.component("PlantTag"),
+		Age = Matter.component("PlantAge", {
 			age = 0,
+			started = 0,
+		}),
+		Growth = Matter.component("PlantGrowth", {
 			stage = 1,
 			maxStage = 3,
-			lastSpawnStage = 0,
 		}),
 	},
 }
