@@ -12,6 +12,9 @@
           "$className": "Folder",
           "GlobalConfig": {
             "$path": "src/configs/GlobalConfig.luau"
+          },
+          "WorkspaceRefs": {
+            "$path": "src/configs/WorkspaceRefs.luau"
           }
         },
         "Core": {
@@ -132,6 +135,9 @@
             "SoundController": {
               "$path": "src/core/Sound/SoundController"
             }
+          },
+          "TagRegistry": {
+            "$path": "src/core/TagRegistry"
           }
         },
         "Ecs": {
@@ -160,6 +166,9 @@
               "$className": "Folder",
               "BushFactory": {
                 "$path": "src/ecs/Factories/Plants/BushFactory.luau"
+              },
+              "PlantFactory": {
+                "$path": "src/ecs/Factories/Plants/PlantFactory.luau"
               }
             }
           },
@@ -169,6 +178,9 @@
               "$className": "Folder",
               "PlantType": {
                 "$path": "src/ecs/Systems/HandlePlantGrownSystem/PlantType.luau"
+              },
+              "TreeMath": {
+                "$path": "src/ecs/Systems/HandlePlantGrownSystem/TreeMath.luau"
               }
             },
             "TestSystem": {
@@ -322,6 +334,9 @@
         },
         "Utils": {
           "$className": "Folder",
+          "AttributeUtils": {
+            "$path": "src/utils/AttributeUtils.luau"
+          },
           "CframeBuffer": {
             "$path": "src/utils/CframeBuffer.luau"
           },
@@ -432,16 +447,19 @@
               "$path": "src/ecs/Systems/HandlePlantGrownSystem/Server.luau"
             }
           },
-          "HandleVineGrownSystem": {
-            "$className": "Folder",
-            "HandleVineGrownSystemServer": {
-              "$path": "src/ecs/Systems/HandleVineGrownSystem/Server.luau"
-            }
-          },
           "ModelSystem": {
             "$className": "Folder",
             "ModelSystemServer": {
               "$path": "src/ecs/Systems/ModelSystem/Server.luau"
+            }
+          },
+          "Plant": {
+            "$className": "Folder",
+            "ClimbingSystem": {
+              "$className": "Folder",
+              "ClimbingSystemServer": {
+                "$path": "src/ecs/Systems/Plant/ClimbingSystem/Server.luau"
+              }
             }
           },
           "SyncHierachySystem": {

@@ -1,0 +1,1204 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: lib/Utils, lib/init.luau, lib/Core, lib/Collections
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+lib/Collections/Map.luau
+lib/Collections/PriorityQueue.luau
+lib/Collections/Queue.luau
+lib/Collections/Set.luau
+lib/Collections/Stack.luau
+lib/Core/BaseCollection.luau
+lib/Core/LinkedCollection.luau
+lib/Core/Nodes.luau
+lib/init.luau
+lib/Utils/Iter.luau
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="lib/Collections/Map.luau">
+local LinkedCollection = require(script.Parent.Parent.Core.LinkedCollection)
+local Iter = require(script.Parent.Parent.Utils.Iter)
+
+local Map = {}
+Map.__index = Map
+setmetatable(Map, { __index = LinkedCollection })
+
+type Node<K, V> = {
+	key: K,
+	value: V,
+	prev: any?,
+	next: any?,
+}
+
+export type MapData<K, V> = {
+	_map: { [K]: Node<K, V> },
+	_head: Node<K, V>?,
+	_tail: Node<K, V>?,
+}
+
+export type Map<K, V> = {
+	Has: (self: Map<K, V>, key: K) -> boolean,
+	Get: (self: Map<K, V>, key: K) -> V?,
+
+	SetFront: (self: Map<K, V>, key: K, value: V) -> boolean,
+	SetBack: (self: Map<K, V>, key: K, value: V) -> boolean,
+	Set: (self: Map<K, V>, key: K, value: V) -> (),
+
+	Pop: (self: Map<K, V>, key: K) -> V?,
+	PopFront: (self: Map<K, V>) -> (K?, V?),
+	PopBack: (self: Map<K, V>) -> (K?, V?),
+
+	PeekFront: (self: Map<K, V>) -> (K?, V?),
+	PeekBack: (self: Map<K, V>) -> (K?, V?),
+	Iter: (self: Map<K, V>, reverse: boolean?) -> () -> (K?, V?),
+
+	Entries: (self: Map<K, V>) -> () -> (K, V),
+} & LinkedCollection.LinkedCollection & MapData<K, V>
+
+local function makeNode<K, V>(key: K, value: V): Node<K, V>
+	return {
+		key = key,
+		value = value,
+		prev = nil,
+		next = nil,
+	}
+end
+
+function Map.new<K, V>(): Map<K, V>
+	local self = setmetatable(LinkedCollection.new(), Map)
+	self._map = {}
+	return self
+end
+
+function Map.Has<K, V>(self: Map<K, V>, key: K): boolean
+	return self._map[key] ~= nil
+end
+
+function Map.Get<K, V>(self: Map<K, V>, key: K): V?
+	local node = self._map[key]
+	return node and node.value or nil
+end
+
+function Map.SetFront<K, V>(self: Map<K, V>, key: K, value: V): boolean
+	local node = self._map[key]
+
+	if node then
+		node.value = value
+		if node ~= self._head then
+			LinkedCollection._unlink(self, node)
+			LinkedCollection._linkFront(self, node)
+		end
+		return false
+	end
+
+	node = makeNode(key, value)
+	LinkedCollection._linkFront(self, node)
+	self._map[key] = node
+	self._size += 1
+	return true
+end
+
+function Map.SetBack<K, V>(self: Map<K, V>, key: K, value: V): boolean
+	local node = self._map[key]
+
+	if node then
+		node.value = value
+		if node ~= self._tail then
+			LinkedCollection._unlink(self, node)
+			LinkedCollection._linkBack(self, node)
+		end
+		return false
+	end
+
+	node = makeNode(key, value)
+	LinkedCollection._linkBack(self, node)
+	self._map[key] = node
+	self._size += 1
+	return true
+end
+
+function Map.Set<K, V>(self: Map<K, V>, key: K, value: V)
+	local node = self._map[key]
+
+	if node then
+		node.value = value
+		return
+	end
+
+	Map.SetBack(self, key, value)
+end
+
+function Map.Pop<K, V>(self: Map<K, V>, key: K): V?
+	local node = self._map[key]
+	if not node then
+		return nil
+	end
+
+	LinkedCollection._unlink(self, node)
+	self._map[key] = nil
+	self._size -= 1
+
+	return node.value
+end
+
+function Map.PopFront<K, V>(self: Map<K, V>): (K?, V?)
+	local node = LinkedCollection._popFrontNode(self)
+	if not node then
+		return nil, nil
+	end
+
+	self._map[node.key] = nil
+	self._size -= 1
+	return node.key, node.value
+end
+
+function Map.PopBack<K, V>(self: Map<K, V>): (K?, V?)
+	local node = LinkedCollection._popBackNode(self)
+	if not node then
+		return nil, nil
+	end
+
+	self._map[node.key] = nil
+	self._size -= 1
+	return node.key, node.value
+end
+
+function Map.PeekFront<K, V>(self: Map<K, V>): (K?, V?)
+	local node = self._head
+	if not node then
+		return nil, nil
+	end
+	return node.key, node.value
+end
+
+function Map.PeekBack<K, V>(self: Map<K, V>): (K?, V?)
+	local node = self._tail
+	if not node then
+		return nil, nil
+	end
+	return node.key, node.value
+end
+
+function Map.Entries<K, V>(self: Map<K, V>, reverse: boolean?): () -> (K?, V?)
+	return Iter.keyValues(reverse and self._tail or self._head, reverse)
+end
+
+function Map.Iter<K, V>(self: Map<K, V>, reverse: boolean?)
+	return Iter.new(Iter.values(reverse and self._tail or self._head, reverse))
+end
+
+function Map.Clear<K, V>(self: Map<K, V>)
+	LinkedCollection.Clear(self)
+	self._map = {}
+end
+
+return Map
+</file>
+
+<file path="lib/Collections/PriorityQueue.luau">
+local PriorityQueue = {}
+PriorityQueue.__index = PriorityQueue
+
+type Node<T> = {
+	value: T,
+	priority: number,
+	order: number,
+}
+
+export type Compare<T> = (a: Node<T>, b: Node<T>) -> boolean
+
+export type PriorityQueue<T> = {
+	_heap: { Node<T> },
+	_size: number,
+	_order: number,
+	_compare: Compare<T>,
+
+	Push: (self: PriorityQueue<T>, value: T, priority: number?) -> boolean,
+	Pop: (self: PriorityQueue<T>) -> (T?, number?),
+	Peek: (self: PriorityQueue<T>) -> (T?, number?),
+
+	Iter: (self: PriorityQueue<T>) -> () -> (T?, number?),
+	Clear: (self: PriorityQueue<T>) -> (),
+	Empty: (self: PriorityQueue<T>) -> boolean,
+	Size: (self: PriorityQueue<T>) -> number,
+}
+
+local function defaultCompare<T>(a: Node<T>, b: Node<T>): boolean
+	if a.priority == b.priority then
+		return a.order < b.order
+	end
+
+	return a.priority < b.priority
+end
+
+local function swap<T>(heap: { Node<T> }, i: number, j: number)
+	heap[i], heap[j] = heap[j], heap[i]
+end
+
+local function siftUp<T>(self: PriorityQueue<T>, index: number)
+	local heap = self._heap
+
+	while index > 1 do
+		local parent = math.floor(index / 2)
+		if not self._compare(heap[index], heap[parent]) then
+			break
+		end
+
+		swap(heap, index, parent)
+		index = parent
+	end
+end
+
+local function siftDown<T>(self: PriorityQueue<T>, index: number)
+	local heap = self._heap
+	local size = self._size
+
+	while true do
+		local left = index * 2
+		local right = left + 1
+		local best = index
+
+		if left <= size and self._compare(heap[left], heap[best]) then
+			best = left
+		end
+
+		if right <= size and self._compare(heap[right], heap[best]) then
+			best = right
+		end
+
+		if best == index then
+			break
+		end
+
+		swap(heap, index, best)
+		index = best
+	end
+end
+
+function PriorityQueue.new<T>(compare: Compare<T>?): PriorityQueue<T>
+	local self = setmetatable({
+		_heap = {},
+		_size = 0,
+		_order = 0,
+		_compare = compare or defaultCompare,
+	}, PriorityQueue)
+
+	return self :: PriorityQueue<T>
+end
+
+function PriorityQueue.Clear<T>(self: PriorityQueue<T>)
+	table.clear(self._heap)
+	self._size = 0
+	self._order = 0
+end
+
+function PriorityQueue.Push<T>(self: PriorityQueue<T>, value: T, priority: number?): boolean
+	assert(value ~= nil, "PriorityQueue does not support nil values")
+
+	local node: Node<T> = {
+		value = value,
+		priority = priority or 0,
+		order = self._order,
+	}
+
+	self._order += 1
+	self._size += 1
+	self._heap[self._size] = node
+
+	siftUp(self, self._size)
+	return true
+end
+
+function PriorityQueue.Peek<T>(self: PriorityQueue<T>): (T?, number?)
+	local node = self._heap[1]
+	if not node then
+		return nil, nil
+	end
+
+	return node.value, node.priority
+end
+
+function PriorityQueue.Pop<T>(self: PriorityQueue<T>): (T?, number?)
+	local heap = self._heap
+	local root = heap[1]
+	if not root then
+		return nil, nil
+	end
+
+	local last = heap[self._size]
+	heap[self._size] = nil
+	self._size -= 1
+
+	if self._size > 0 and last then
+		heap[1] = last
+		siftDown(self, 1)
+	end
+
+	return root.value, root.priority
+end
+
+function PriorityQueue.Iter<T>(self: PriorityQueue<T>): () -> (T?, number?)
+	local snapshot: { Node<T> } = table.create(self._size)
+	for i = 1, self._size do
+		snapshot[i] = self._heap[i]
+	end
+
+	table.sort(snapshot, self._compare)
+
+	local index = 0
+	return function()
+		index += 1
+		local node = snapshot[index]
+		if not node then
+			return nil, nil
+		end
+
+		return node.value, node.priority
+	end
+end
+
+function PriorityQueue.Empty<T>(self: PriorityQueue<T>): boolean
+	return self._size == 0
+end
+
+function PriorityQueue.Size<T>(self: PriorityQueue<T>): number
+	return self._size
+end
+
+return PriorityQueue
+</file>
+
+<file path="lib/Collections/Queue.luau">
+local LinkedCollection = require(script.Parent.Parent.Core.LinkedCollection)
+local Nodes = require(script.Parent.Parent.Core.Nodes)
+local Iter = require(script.Parent.Parent.Utils.Iter)
+
+local Queue = {}
+Queue.__index = Queue
+setmetatable(Queue, { __index = LinkedCollection })
+
+type Node<T> = Nodes.Node<T>
+
+export type Queue<T> = {
+	Enqueue: (self: Queue<T>, value: T) -> boolean,
+	Dequeue: (self: Queue<T>) -> T?,
+
+	PushFront: (self: Queue<T>, value: T) -> boolean,
+	PushBack: (self: Queue<T>, value: T) -> boolean,
+	PopFront: (self: Queue<T>) -> T?,
+	PopBack: (self: Queue<T>) -> T?,
+
+	PeekFront: (self: Queue<T>) -> T?,
+	PeekBack: (self: Queue<T>) -> T?,
+	Front: (self: Queue<T>) -> T?,
+	Back: (self: Queue<T>) -> T?,
+
+	Iter: (self: Queue<T>, reverse: boolean?) -> () -> T?,
+	Empty: (self: Queue<T>) -> boolean,
+	Size: (self: Queue<T>) -> number,
+	Clear: (self: Queue<T>) -> (),
+} & LinkedCollection.LinkedCollection
+
+function Queue.new<T>(): Queue<T>
+	local self = setmetatable(LinkedCollection.new(), Queue)
+	return self
+end
+
+local function clearLinks(self: Queue<any>)
+	local current = self._head
+	while current do
+		local nextNode = current.next
+		current.prev = nil
+		current.next = nil
+		current = nextNode
+	end
+	self._head = nil
+	self._tail = nil
+	self._size = 0
+end
+
+function Queue.Clear<T>(self: Queue<T>)
+	clearLinks(self)
+end
+
+function Queue.PushBack<T>(self: Queue<T>, value: T): boolean
+	assert(value ~= nil, "Queue does not support nil values")
+
+	local node = Nodes.value(value)
+	LinkedCollection._linkBack(self, node)
+	self._size += 1
+	return true
+end
+
+function Queue.PushFront<T>(self: Queue<T>, value: T): boolean
+	assert(value ~= nil, "Queue does not support nil values")
+
+	local node = Nodes.value(value)
+	LinkedCollection._linkFront(self, node)
+	self._size += 1
+	return true
+end
+
+function Queue.Enqueue<T>(self: Queue<T>, value: T): boolean
+	return Queue.PushBack(self, value)
+end
+
+function Queue.PopFront<T>(self: Queue<T>): T?
+	local node: Node<T>? = LinkedCollection._popFrontNode(self)
+	if not node then
+		return nil
+	end
+
+	self._size -= 1
+	return node.value
+end
+
+function Queue.PopBack<T>(self: Queue<T>): T?
+	local node: Node<T>? = LinkedCollection._popBackNode(self)
+	if not node then
+		return nil
+	end
+
+	self._size -= 1
+	return node.value
+end
+
+function Queue.Dequeue<T>(self: Queue<T>): T?
+	return Queue.PopFront(self)
+end
+
+function Queue.PeekFront<T>(self: Queue<T>): T?
+	return self._head and self._head.value or nil
+end
+
+function Queue.PeekBack<T>(self: Queue<T>): T?
+	return self._tail and self._tail.value or nil
+end
+
+function Queue.Front<T>(self: Queue<T>): T?
+	return Queue.PeekFront(self)
+end
+
+function Queue.Back<T>(self: Queue<T>): T?
+	return Queue.PeekBack(self)
+end
+
+function Queue.Iter<T>(self: Queue<T>, reverse: boolean?): () -> T?
+	return Iter.values(if reverse then self._tail else self._head, reverse)
+end
+
+return Queue
+</file>
+
+<file path="lib/Collections/Stack.luau">
+local LinkedCollection = require(script.Parent.Parent.Core.LinkedCollection)
+local Nodes = require(script.Parent.Parent.Core.Nodes)
+local Iter = require(script.Parent.Parent.Utils.Iter)
+
+local Stack = {}
+Stack.__index = Stack
+setmetatable(Stack, { __index = LinkedCollection })
+
+type Node<T> = Nodes.Node<T>
+
+export type Stack<T> = {
+	Push: (self: Stack<T>, value: T) -> boolean,
+	Pop: (self: Stack<T>) -> T?,
+	Peek: (self: Stack<T>) -> T?,
+	Top: (self: Stack<T>) -> T?,
+
+	Iter: (self: Stack<T>, reverse: boolean?) -> () -> T?,
+	Empty: (self: Stack<T>) -> boolean,
+	Size: (self: Stack<T>) -> number,
+	Clear: (self: Stack<T>) -> (),
+} & LinkedCollection.LinkedCollection
+
+function Stack.new<T>(): Stack<T>
+	local self = setmetatable(LinkedCollection.new(), Stack)
+	return self
+end
+
+local function clearLinks(self: Stack<any>)
+	local current = self._head
+	while current do
+		local nextNode = current.next
+		current.prev = nil
+		current.next = nil
+		current = nextNode
+	end
+	self._head = nil
+	self._tail = nil
+	self._size = 0
+end
+
+function Stack.Clear<T>(self: Stack<T>)
+	clearLinks(self)
+end
+
+function Stack.Push<T>(self: Stack<T>, value: T): boolean
+	assert(value ~= nil, "Stack does not support nil values")
+
+	local node = Nodes.value(value)
+	LinkedCollection._linkBack(self, node)
+	self._size += 1
+	return true
+end
+
+function Stack.Pop<T>(self: Stack<T>): T?
+	local node: Node<T>? = LinkedCollection._popBackNode(self)
+	if not node then
+		return nil
+	end
+
+	self._size -= 1
+	return node.value
+end
+
+function Stack.Peek<T>(self: Stack<T>): T?
+	return self._tail and self._tail.value or nil
+end
+
+function Stack.Top<T>(self: Stack<T>): T?
+	return Stack.Peek(self)
+end
+
+function Stack.Iter<T>(self: Stack<T>, reverse: boolean?): () -> T?
+	if reverse then
+		return Iter.values(self._head, false)
+	end
+
+	return Iter.values(self._tail, true)
+end
+
+function Stack.Empty<T>(self: Stack<T>): boolean
+	return self._size == 0
+end
+
+function Stack.Size<T>(self: Stack<T>): number
+	return self._size
+end
+
+return Stack
+</file>
+
+<file path="lib/Core/BaseCollection.luau">
+local Collection = {}
+Collection.__index = Collection
+
+export type Collection = {
+	_size: number,
+	Size: (self: Collection) -> number,
+	Empty: (self: Collection) -> boolean,
+	Clear: (self: Collection) -> (),
+	Destroy: (self: Collection) -> (),
+}
+
+function Collection.new(): Collection
+	local self = setmetatable({
+		_size = 0,
+	}, Collection)
+
+	return self
+end
+
+function Collection.Size(self: Collection): number
+	return self._size
+end
+
+function Collection.Empty(self: Collection): boolean
+	return self._size == 0
+end
+
+function Collection.Clear(self: Collection)
+	self._size = 0
+end
+
+function Collection.Destroy(self: Collection)
+	table.clear(self)
+	setmetatable(self, nil)
+end
+
+return Collection
+</file>
+
+<file path="lib/Core/LinkedCollection.luau">
+local BaseCollection = require(script.Parent.BaseCollection)
+
+local LinkedCollection = {}
+LinkedCollection.__index = LinkedCollection
+setmetatable(LinkedCollection, { __index = BaseCollection })
+
+export type LinkedCollection = BaseCollection.Collection & {
+	_head: any?,
+	_tail: any?,
+}
+
+function LinkedCollection.new(): LinkedCollection
+	local self = setmetatable(BaseCollection.new(), LinkedCollection)
+	self._head = nil
+	self._tail = nil
+
+	return self
+end
+
+function LinkedCollection.Clear(self: LinkedCollection)
+	BaseCollection.Clear(self)
+	self._head = nil
+	self._tail = nil
+end
+
+function LinkedCollection._linkFront(self: LinkedCollection, node: any)
+	node.prev = nil
+	node.next = self._head
+
+	if self._head then
+		self._head.prev = node
+	else
+		self._tail = node
+	end
+
+	self._head = node
+end
+
+function LinkedCollection._linkBack(self: LinkedCollection, node: any)
+	node.next = nil
+	node.prev = self._tail
+
+	if self._tail then
+		self._tail.next = node
+	else
+		self._head = node
+	end
+
+	self._tail = node
+end
+
+function LinkedCollection._unlink(self: LinkedCollection, node: any)
+	if node.prev then
+		node.prev.next = node.next
+	else
+		self._head = node.next
+	end
+
+	if node.next then
+		node.next.prev = node.prev
+	else
+		self._tail = node.prev
+	end
+
+	node.prev = nil
+	node.next = nil
+end
+
+function LinkedCollection._popFrontNode(self: LinkedCollection)
+	local node = self._head
+	if not node then
+		return nil
+	end
+
+	LinkedCollection._unlink(self, node)
+	return node
+end
+
+function LinkedCollection._popBackNode(self: LinkedCollection)
+	local node = self._tail
+	if not node then
+		return nil
+	end
+
+	LinkedCollection._unlink(self, node)
+	return node
+end
+
+return LinkedCollection
+</file>
+
+<file path="lib/Core/Nodes.luau">
+--* Types
+export type Node<T> = {
+	value: T,
+	prev: Node<T>?,
+	next: Node<T>?,
+}
+
+export type NodeKey<K, V> = Node<V> & {
+	key: K,
+}
+
+local Nodes = {}
+
+function Nodes.new<K, V>(value: V, key: K?): Node<V> | NodeKey<K, V>
+	if key ~= nil then
+		return Nodes.keyValue(key, value)
+	else
+		return Nodes.value(value)
+	end
+end
+
+function Nodes.value<T>(value: T): Node<T>
+	return {
+		value = value,
+		prev = nil,
+		next = nil,
+	}
+end
+
+function Nodes.keyValue<K, V>(key: K, value: V): NodeKey<K, V>
+	return {
+		key = key,
+		value = value,
+		prev = nil,
+		next = nil,
+	}
+end
+
+return Nodes
+</file>
+
+<file path="lib/Utils/Iter.luau">
+local Iter = {}
+Iter.__index = Iter
+
+type NextFn<T> = () -> T?
+export type Iter<T> = {
+	next: NextFn<T>,
+
+	-- map: (self: Iter<T>, fn: (T) -> any) -> any, --! return Type<U> should using typeof
+	-- filter: (self: Iter<T>, fn: (T) -> boolean) -> Iter<T>,
+	-- take: (self: Iter<T>, n: number) -> Iter<T>,
+	-- skip: (self: Iter<T>, n: number) -> Iter<T>,
+
+	-- forEach: (self: Iter<T>, fn: (T) -> ()) -> (),
+	-- toArray: (self: Iter<T>) -> { T },
+
+	-- find: (self: Iter<T>, fn: (T) -> boolean) -> T?,
+	-- some: (self: Iter<T>, fn: (T) -> boolean) -> boolean,
+	-- every: (self: Iter<T>, fn: (T) -> boolean) -> boolean,
+} & typeof(Iter)
+
+-- * RAW
+function Iter.fromArray<T>(arr: { T }): Iter<T>
+	local i = 0
+	return Iter.new(function()
+		i += 1
+		return arr[i]
+	end)
+end
+
+function Iter.reduce<T, U>(self: Iter<T>, fn: (U, T) -> U, init: U): U
+	local acc = init
+	while true do
+		local v = self.next()
+		if v == nil then
+			break
+		end
+		acc = fn(acc, v)
+	end
+	return acc
+end
+
+function Iter.fromLinked(head, reverse)
+	local node = head
+
+	return function()
+		if not node then
+			return nil
+		end
+
+		local current = node
+		node = if reverse then current.prev else current.next
+
+		return current
+	end
+end
+
+function Iter.values<T>(head: any, reverse: boolean?): () -> T?
+	local nextNode = Iter.fromLinked(head, reverse)
+
+	return function()
+		local node = nextNode()
+		return node and node.value or nil
+	end
+end
+
+function Iter.keyValues<K, V>(head: any, reverse: boolean?): () -> (K?, V?)
+	local nextNode = Iter.fromLinked(head, reverse)
+
+	return function()
+		local node = nextNode()
+		if not node then
+			return nil, nil
+		end
+		return node.key, node.value
+	end
+end
+
+-- * CONSTRUCTOR
+function Iter.new<T>(nextFn: NextFn<T>): Iter<T>
+	local self = setmetatable({
+		next = nextFn,
+	}, Iter)
+	return self
+end
+
+-- * TRANSFORMS
+function Iter.map<T, U>(self: Iter<T>, fn: (T) -> U): Iter<U>
+	return Iter.new(function()
+		local v = self.next()
+		if v == nil then
+			return nil
+		end
+		return fn(v)
+	end)
+end
+
+function Iter.filter<T>(self: Iter<T>, fn: (T) -> boolean): Iter<T>
+	return Iter.new(function()
+		while true do
+			local v = self.next()
+			if v == nil then
+				return nil
+			end
+			if fn(v) then
+				return v
+			end
+		end
+	end)
+end
+
+function Iter.take<T>(self: Iter<T>, n: number): Iter<T>
+	local count = 0
+	return Iter.new(function()
+		if count >= n then
+			return nil
+		end
+		local v = self.next()
+		if v == nil then
+			return nil
+		end
+		count += 1
+		return v
+	end)
+end
+
+function Iter.skip<T>(self: Iter<T>, n: number): Iter<T>
+	local skipped = false
+	return Iter.new(function()
+		if not skipped then
+			for _ = 1, n do
+				if self.next() == nil then
+					return nil
+				end
+			end
+			skipped = true
+		end
+		return self.next()
+	end)
+end
+
+-- * TERMINALS
+function Iter.forEach<T>(self: Iter<T>, fn: (T) -> ())
+	while true do
+		local v = self.next()
+		if v == nil then
+			break
+		end
+		fn(v)
+	end
+end
+
+function Iter.toArray<T>(self: Iter<T>): { T }
+	local result = {}
+	self:forEach(function(v)
+		table.insert(result, v)
+	end)
+	return result
+end
+
+function Iter.find<T>(self: Iter<T>, fn: (T) -> boolean): T?
+	while true do
+		local v = self.next()
+		if v == nil then
+			return nil
+		end
+		if fn(v) then
+			return v
+		end
+	end
+end
+
+function Iter.some<T>(self: Iter<T>, fn: (T) -> boolean): boolean
+	return self:find(fn) ~= nil
+end
+
+function Iter.every<T>(self: Iter<T>, fn: (T) -> boolean)
+	while true do
+		local v = self.next()
+		if v == nil then
+			return true
+		end
+		if not fn(v) then
+			return false
+		end
+	end
+end
+
+return Iter
+</file>
+
+<file path="lib/Collections/Set.luau">
+local LinkedCollection = require(script.Parent.Parent.Core.LinkedCollection)
+local Nodes = require(script.Parent.Parent.Core.Nodes)
+local Iter = require(script.Parent.Parent.Utils.Iter)
+
+local Set = {}
+Set.__index = Set
+setmetatable(Set, { __index = LinkedCollection })
+
+type Node<T> = Nodes.Node<T>
+
+export type Set<T> = {
+	_map: { [T]: Node<T> },
+	_head: Node<T>?,
+	_tail: Node<T>?,
+
+	PushFront: (self: Set<T>, value: T) -> boolean,
+	PushBack: (self: Set<T>, value: T) -> boolean,
+
+	Pop: (self: Set<T>, value: T) -> T?,
+	PopFront: (self: Set<T>) -> T?,
+	PopBack: (self: Set<T>) -> T?,
+
+	Has: (self: Set<T>, value: T) -> boolean,
+	Get: (self: Set<T>, value: T) -> T?,
+	PeekFront: (self: Set<T>) -> T?,
+	PeekBack: (self: Set<T>) -> T?,
+
+	Values: (self: Set<T>, reverse: boolean?) -> () -> T?,
+	Iter: (self: Set<T>, reverse: boolean?) -> Iter.Iter<T>,
+
+	Clone: (self: Set<T>) -> Set<T>,
+	ToArray: (self: Set<T>) -> { T },
+	ToMap: (self: Set<T>) -> { [T]: boolean },
+} & LinkedCollection.LinkedCollection
+
+function Set.new<T>(): Set<T>
+	local self = setmetatable(LinkedCollection.new(), Set)
+	self._map = {}
+	return self
+end
+
+function Set.fromArray<T>(arr: { T }): Set<T>
+	local set = Set.new()
+	for _, v in ipairs(arr) do
+		set:PushBack(v)
+	end
+	return set
+end
+
+function Set.PushFront<T>(self: Set<T>, value: T): boolean
+	assert(value ~= nil, "Set does not support nil values")
+
+	if self._map[value] then
+		return false
+	end
+
+	local node = {
+		value = value,
+		prev = nil,
+		next = nil,
+	}
+
+	LinkedCollection._linkFront(self, node)
+	self._map[value] = node
+	self._size += 1
+
+	return true
+end
+
+function Set.PushBack<T>(self: Set<T>, value: T): boolean
+	assert(value ~= nil, "Set does not support nil values")
+
+	if self._map[value] then
+		return false
+	end
+
+	local node = {
+		value = value,
+		prev = nil,
+		next = nil,
+	}
+
+	LinkedCollection._linkBack(self, node)
+	self._map[value] = node
+	self._size += 1
+
+	return true
+end
+
+function Set.Pop<T>(self: Set<T>, value: T): T?
+	local node = self._map[value]
+	if not node then
+		return nil
+	end
+
+	LinkedCollection._unlink(self, node)
+	self._map[value] = nil
+	self._size -= 1
+
+	return node.value
+end
+
+function Set.PopFront<T>(self: Set<T>): T?
+	local node = LinkedCollection._popFrontNode(self)
+	if not node then
+		return nil
+	end
+
+	self._map[node.value] = nil
+	self._size -= 1
+
+	return node.value
+end
+
+function Set.PopBack<T>(self: Set<T>): T?
+	local node = LinkedCollection._popBackNode(self)
+	if not node then
+		return nil
+	end
+
+	self._map[node.value] = nil
+	self._size -= 1
+	return node.value
+end
+
+function Set.Has<T>(self: Set<T>, value: T): boolean
+	return self._map[value] ~= nil
+end
+
+function Set.Get<T>(self: Set<T>, value: T): T?
+	return self._map[value] and self._map[value].value or nil
+end
+
+function Set.PeekFront<T>(self: Set<T>): T?
+	return self._head and self._head.value or nil
+end
+
+function Set.PeekBack<T>(self: Set<T>): T?
+	return self._tail and self._tail.value or nil
+end
+
+function Set.Values<T>(self: Set<T>, reverse: boolean?): () -> T?
+	return Iter.values(reverse and self._tail or self._head, reverse)
+end
+
+function Set.Iter<T>(self: Set<T>, reverse: boolean?): Iter.Iter<T>
+	return Iter.new(Iter.values(reverse and self._tail or self._head, reverse))
+end
+
+function Set.Clear<T>(self: Set<T>)
+	LinkedCollection.Clear(self)
+	self._map = {}
+end
+
+function Set.ToArray<T>(self: Set<T>): { T }
+	local arr = table.create(self:Size())
+	local i = 0
+
+	for v in self:Values() do
+		i += 1
+		arr[i] = v
+	end
+
+	return arr
+end
+
+function Set.ToMap<T>(self: Set<T>): { [T]: boolean }
+	local map = {}
+
+	for v in self:Values() do
+		map[v] = true
+	end
+
+	return map
+end
+
+function Set.Clone<T>(self: Set<T>): Set<T>
+	local newSet = Set.new()
+
+	for v in self:Values() do
+		newSet:PushBack(v)
+	end
+
+	return newSet
+end
+
+return Set
+</file>
+
+<file path="lib/init.luau">
+local Map = require(script.Collections.Map)
+local PriorityQueue = require(script.Collections.PriorityQueue)
+local Queue = require(script.Collections.Queue)
+local Set = require(script.Collections.Set)
+local Stack = require(script.Collections.Stack)
+
+export type Set<T> = Set.Set<T>
+export type Map<K, V> = Map.Map<K, V>
+export type Queue<T> = Queue.Queue<T>
+export type PriorityQueue<T> = PriorityQueue.PriorityQueue<T>
+export type Stack<T> = Stack.Stack<T>
+
+local Collections = {
+	Set = Set,
+	Map = Map,
+	Queue = Queue,
+	PriorityQueue = PriorityQueue,
+	Stack = Stack,
+}
+
+return Collections
+</file>
+
+</files>

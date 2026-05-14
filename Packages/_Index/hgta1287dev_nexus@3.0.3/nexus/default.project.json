@@ -1,0 +1,6 @@
+{
+  "name": "nexus",
+  "tree": {
+    "$path": "lib"
+  }
+}

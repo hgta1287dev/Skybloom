@@ -30,6 +30,7 @@ RobloxStateMachine = "prooheckcp/robloxstatemachine@>0.0.0, <10.0.0"
 StateMachine = "hgta1287dev/guarded-state-machine@1.0.3"
 Iris = "sirmallard/iris@2.5.0"
 Fluent = "hgta1287dev/fluent@1.0.0"
+Nexus = "hgta1287dev/nexus@3.0.3"
 
 [server-dependencies]
 ProfileService = "firebird702/profileservice@1.1.0"

@@ -3,7 +3,6 @@ local Components = require(ReplicatedStorage.Shared.Ecs.Components.Components)
 local ECS = require(ReplicatedStorage.Shared.Ecs.ECS)
 
 function System(world: ECS.World)
-	print("World")
 	for id, model in world:query(Components.Model) do
 		if not model.instance then
 			warn("Model instance is nil")
